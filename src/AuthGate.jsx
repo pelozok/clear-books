@@ -95,5 +95,5 @@ export default function AuthGate({ children }) {
     );
   }
 
-  return children;
+  return typeof children === "function" ? children(user) : children;
 }

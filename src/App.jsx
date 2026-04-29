@@ -4,12 +4,13 @@ import {
   XAxis, YAxis, Tooltip, ResponsiveContainer
 } from "recharts";
 import {
-  Plus, Trash2, Pencil,
+  Plus, Trash2, Pencil, LogOut,
   Wallet, PiggyBank, Settings, X, Download, Upload,
   TrendingDown, TrendingUp, Sparkles, RefreshCw, DollarSign,
   AlertCircle, ChevronDown
 } from "lucide-react";
 import { storage } from "./storage.js";
+import * as XLSX from "xlsx";
 
 // ── Paleta moderna ────────────────────────────────────
 const T = {
@@ -105,7 +106,7 @@ const nextMonthKey = () => {
 };
 
 // ── App ───────────────────────────────────────────────
-export default function App({ onSignOut }) {
+export default function App({ user, onSignOut }) {
   const [loading,         setLoading]         = useState(true);
   const [config,          setConfig]          = useState(null);
   const [expenses,        setExpenses]        = useState([]);
@@ -162,6 +163,69 @@ export default function App({ onSignOut }) {
     catch (e) { console.error(e); }
   };
 
+  const exportData = () => {
+    const blob = new Blob([JSON.stringify({ config, expenses }, null, 2)], { type: "application/json" });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement("a");
+    a.href = url; a.download = `finanzas-${todayISO()}.json`; a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const exportExcel = () => {
+    const cats = config.categories?.length ? config.categories : DEFAULT_CATEGORIES;
+    const rate = config.exchangeRate || 515;
+    const wb = XLSX.utils.book_new();
+
+    // Hoja 1: todos los gastos
+    const gastoRows = [...expenses]
+      .sort((a, b) => b.date.localeCompare(a.date))
+      .map(e => {
+        const cat = getCat(e.category, cats);
+        return {
+          Fecha:        e.date,
+          Categoría:    cat.label,
+          Tipo:         cat.type === "necesidad" ? "Necesidad" : "Deseo",
+          Descripción:  e.description || "",
+          Moneda:       e.currency || "CRC",
+          Monto:        e.amount,
+          "Monto CRC":  Math.round(toCRC(e.amount, e.currency || "CRC", rate)),
+        };
+      });
+    const ws1 = XLSX.utils.json_to_sheet(gastoRows.length ? gastoRows : [{ Fecha: "", Categoría: "", Tipo: "", Descripción: "", Moneda: "", Monto: 0, "Monto CRC": 0 }]);
+    ws1["!cols"] = [{ wch: 12 }, { wch: 18 }, { wch: 12 }, { wch: 28 }, { wch: 8 }, { wch: 12 }, { wch: 14 }];
+    XLSX.utils.book_append_sheet(wb, ws1, "Gastos");
+
+    // Hoja 2: resumen por mes
+    const totalIncomeCRC = (config.incomeCRC || 0) + (config.incomeUSD || 0) * rate;
+    const byMonth = {};
+    expenses.forEach(e => {
+      const mk = monthKey(e.date);
+      if (!byMonth[mk]) byMonth[mk] = [];
+      byMonth[mk].push(e);
+    });
+    const resumenRows = Object.entries(byMonth)
+      .sort(([a], [b]) => b.localeCompare(a))
+      .map(([mk, exps]) => {
+        const total       = Math.round(exps.reduce((s, e) => s + toCRC(e.amount, e.currency || "CRC", rate), 0));
+        const necesidades = Math.round(exps.filter(e => getCat(e.category, cats).type === "necesidad").reduce((s, e) => s + toCRC(e.amount, e.currency || "CRC", rate), 0));
+        const deseos      = Math.round(exps.filter(e => getCat(e.category, cats).type === "deseo").reduce((s, e) => s + toCRC(e.amount, e.currency || "CRC", rate), 0));
+        return {
+          Mes:            monthLabel(mk),
+          "Total gastos": total,
+          Necesidades:    necesidades,
+          Deseos:         deseos,
+          Ingreso:        Math.round(totalIncomeCRC),
+          "Meta ahorro":  Math.round(totalIncomeCRC * (config.savingsRate / 100)),
+          Disponible:     Math.round(totalIncomeCRC - total),
+        };
+      });
+    const ws2 = XLSX.utils.json_to_sheet(resumenRows.length ? resumenRows : [{}]);
+    ws2["!cols"] = [{ wch: 18 }, { wch: 14 }, { wch: 14 }, { wch: 12 }, { wch: 14 }, { wch: 14 }, { wch: 14 }];
+    XLSX.utils.book_append_sheet(wb, ws2, "Resumen mensual");
+
+    XLSX.writeFile(wb, `finanzas-${todayISO()}.xlsx`);
+  };
+
   if (loading) {
     return (
       <div style={{ background: T.bg, ...fontBody }} className="min-h-screen flex items-center justify-center">
@@ -183,10 +247,12 @@ export default function App({ onSignOut }) {
       <div className="max-w-6xl mx-auto px-5 sm:px-8 py-8 sm:py-12">
         <Header
           config={config}
+          user={user}
           currentMonth={currentMonth}
           setCurrentMonth={setCurrentMonth}
           months={availableMonths(expenses, currentMonth)}
           onOpenSettings={() => setShowSettings(true)}
+          onSignOut={onSignOut}
         />
         <Dashboard
           config={config}
@@ -195,6 +261,7 @@ export default function App({ onSignOut }) {
           categories={categories}
           onAdd={(exp) => saveExpenses([exp, ...expenses])}
           onDelete={(id) => saveExpenses(expenses.filter(e => e.id !== id))}
+          onExport={exportExcel}
         />
       </div>
 
@@ -208,7 +275,6 @@ export default function App({ onSignOut }) {
             if (newExpenses) await saveExpenses(newExpenses);
             setShowSettings(false);
           }}
-          onSignOut={onSignOut}
           onClose={() => setShowSettings(false)}
           onClearAll={async () => { await saveExpenses([]); setShowSettings(false); }}
           onImport={async (cfg, exps) => {
@@ -363,13 +429,26 @@ function Field({ label, hint, children }) {
 }
 
 // ── Header ────────────────────────────────────────────
-function Header({ config, currentMonth, setCurrentMonth, months, onOpenSettings }) {
+function Header({ config, user, currentMonth, setCurrentMonth, months, onOpenSettings, onSignOut }) {
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef(null);
+
+  useEffect(() => {
+    const close = (e) => { if (!menuRef.current?.contains(e.target)) setMenuOpen(false); };
+    document.addEventListener("mousedown", close);
+    return () => document.removeEventListener("mousedown", close);
+  }, []);
+
+  const firstName = user?.displayName?.split(" ")[0] || "";
+
   return (
     <header className="flex items-start justify-between mb-10 sm:mb-14">
       <div>
-        <div style={{ color: T.accent }} className="text-[10px] sm:text-xs font-semibold tracking-[0.25em] uppercase mb-2">
-          Libro de cuentas
-        </div>
+        {firstName && (
+          <div style={{ color: T.ink2 }} className="text-sm font-medium mb-2">
+            Hola, {firstName}
+          </div>
+        )}
         <h1 style={{ ...fontSans, fontWeight: 800, color: T.ink }} className="text-4xl sm:text-5xl tracking-tight leading-none">
           Finanzas
         </h1>
@@ -381,17 +460,66 @@ function Header({ config, currentMonth, setCurrentMonth, months, onOpenSettings 
           </select>
         </div>
       </div>
-      <button onClick={onOpenSettings}
-        style={{ borderColor: T.line, color: T.ink2, background: "white" }}
-        className="p-2.5 border rounded-xl hover:bg-slate-50 transition shadow-sm" aria-label="Ajustes">
-        <Settings size={16} />
-      </button>
+
+      {/* User menu */}
+      <div ref={menuRef} className="relative">
+        <button
+          onClick={() => setMenuOpen(!menuOpen)}
+          style={{ borderColor: T.line, background: "white" }}
+          className="flex items-center gap-2 pl-1.5 pr-2.5 py-1.5 border rounded-xl hover:bg-slate-50 transition shadow-sm">
+          {user?.photoURL ? (
+            <img src={user.photoURL} referrerPolicy="no-referrer"
+              className="w-7 h-7 rounded-full" alt={firstName} />
+          ) : (
+            <div style={{ background: T.accent, color: "white" }}
+              className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold">
+              {firstName?.[0]?.toUpperCase()}
+            </div>
+          )}
+          <ChevronDown size={13} style={{ color: T.muted, transition: "transform 200ms", transform: menuOpen ? "rotate(180deg)" : "rotate(0deg)" }} />
+        </button>
+
+        {menuOpen && (
+          <div style={{ background: "white", borderColor: T.line }}
+            className="absolute right-0 top-full mt-2 w-60 rounded-2xl border shadow-lg overflow-hidden z-40">
+            {/* User info */}
+            <div style={{ borderColor: T.line }} className="flex items-center gap-3 px-4 py-3 border-b">
+              {user?.photoURL ? (
+                <img src={user.photoURL} referrerPolicy="no-referrer"
+                  className="w-9 h-9 rounded-full shrink-0" alt={firstName} />
+              ) : (
+                <div style={{ background: T.accent + "20", color: T.accent }}
+                  className="w-9 h-9 rounded-full flex items-center justify-center font-bold shrink-0">
+                  {firstName?.[0]?.toUpperCase()}
+                </div>
+              )}
+              <div className="min-w-0">
+                <div style={{ color: T.ink }} className="text-sm font-semibold truncate">{user?.displayName}</div>
+                <div style={{ color: T.muted }} className="text-xs truncate">{user?.email}</div>
+              </div>
+            </div>
+            {/* Actions */}
+            <button
+              onClick={() => { onOpenSettings(); setMenuOpen(false); }}
+              style={{ color: T.ink2 }}
+              className="w-full flex items-center gap-3 px-4 py-3 text-sm font-medium hover:bg-slate-50 transition">
+              <Settings size={14} /> Configuración
+            </button>
+            <button
+              onClick={onSignOut}
+              style={{ color: T.ink2, borderColor: T.line }}
+              className="w-full flex items-center gap-3 px-4 py-3 text-sm font-medium hover:bg-slate-50 transition border-t">
+              <LogOut size={14} /> Cerrar sesión
+            </button>
+          </div>
+        )}
+      </div>
     </header>
   );
 }
 
 // ── Dashboard ─────────────────────────────────────────
-function Dashboard({ config, expenses, currentMonth, categories, onAdd, onDelete }) {
+function Dashboard({ config, expenses, currentMonth, categories, onAdd, onDelete, onExport }) {
   const [showAdd, setShowAdd] = useState(false);
 
   const rate           = config.exchangeRate || 515;
@@ -462,11 +590,16 @@ function Dashboard({ config, expenses, currentMonth, categories, onAdd, onDelete
 
       <SavingsBar progress={remaining} goal={savingsGoal} />
 
-      <div className="my-8">
+      <div className="my-8 flex items-center gap-3 flex-wrap">
         <button onClick={() => setShowAdd(true)}
           style={{ background: T.accent, color: "white" }}
           className="inline-flex items-center gap-2 px-5 py-3 rounded-xl text-sm tracking-wide font-semibold hover:opacity-90 transition shadow-sm">
           <Plus size={16} /> Agregar gasto
+        </button>
+        <button onClick={onExport}
+          style={{ borderColor: T.line, color: T.ink2, background: "white" }}
+          className="inline-flex items-center gap-2 px-4 py-3 rounded-xl text-sm font-medium border hover:bg-slate-50 transition shadow-sm">
+          <Download size={15} /> Exportar datos
         </button>
       </div>
 
@@ -852,7 +985,7 @@ function AddExpenseModal({ onAdd, onClose, currentMonth, categories }) {
 }
 
 // ── SettingsModal ─────────────────────────────────────
-function SettingsModal({ config, categories, expenses, onSave, onSignOut, onClose, onClearAll, onImport }) {
+function SettingsModal({ config, categories, expenses, onSave, onClose, onClearAll, onImport }) {
   const [incomeUSD,            setIncomeUSD]            = useState((config.incomeUSD || 0).toString());
   const [incomeCRC,            setIncomeCRC]            = useState((config.incomeCRC || 0).toString());
   const [savingsBalanceUSD,    setSavingsBalanceUSD]    = useState((config.savingsBalanceUSD ?? "").toString());
@@ -1293,13 +1426,6 @@ function SettingsModal({ config, categories, expenses, onSave, onSignOut, onClos
             <Upload size={14} /> Importar datos (JSON)
           </button>
           {importError && <p style={{ color: T.bad }} className="text-xs px-1">{importError}</p>}
-
-          {onSignOut && (
-            <button onClick={onSignOut} style={{ color: T.muted, borderColor: T.line }}
-              className="w-full py-2.5 rounded-xl border text-sm font-medium hover:bg-slate-50 transition flex items-center justify-center gap-2">
-              Cerrar sesión
-            </button>
-          )}
 
           {!confirmClear ? (
             <button onClick={() => setConfirmClear(true)} style={{ color: T.bad }}

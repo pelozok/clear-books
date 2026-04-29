@@ -9,7 +9,7 @@ import { signOut } from 'firebase/auth'
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <AuthGate>
-      <App onSignOut={() => signOut(auth)} />
+      {(user) => <App user={user} onSignOut={() => signOut(auth)} />}
     </AuthGate>
   </StrictMode>,
 )
