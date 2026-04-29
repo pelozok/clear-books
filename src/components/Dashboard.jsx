@@ -96,6 +96,11 @@ export function Dashboard({ config, expenses, currentMonth, categories, onAdd, o
         </button>
       </div>
 
+      <Suggestions
+        income={totalIncomeCRC} totals={totals} config={config} expensesCount={monthExpenses.length}
+        categories={categories} budgets={budgets} expenses={expenses} currentMonth={currentMonth} rate={rate}
+      />
+
       <BudgetSection byCat={totals.byCat} budgets={budgets} categories={categories} />
 
       {monthExpenses.length > 0 ? (
@@ -112,11 +117,6 @@ export function Dashboard({ config, expenses, currentMonth, categories, onAdd, o
       ) : (
         <EmptyState onAdd={() => setShowAdd(true)} />
       )}
-
-      <Suggestions
-        income={totalIncomeCRC} totals={totals} config={config} expensesCount={monthExpenses.length}
-        categories={categories} budgets={budgets} expenses={expenses} currentMonth={currentMonth} rate={rate}
-      />
 
       {monthExpenses.length > 0 && (
         <section className="mt-10">

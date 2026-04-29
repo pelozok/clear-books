@@ -91,7 +91,7 @@ export function Suggestions({ income, totals, config, expensesCount, categories,
   if (tips.length === 0) return null;
 
   return (
-    <section className="mt-8">
+    <section className="mt-8 mb-8">
       <h2 style={{ color: T.ink, fontWeight: 700 }} className="text-xl font-bold mb-4 flex items-center gap-2">
         <Sparkles size={16} style={{ color: T.accent }} /> Sugerencias
       </h2>
