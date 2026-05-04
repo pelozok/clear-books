@@ -96,7 +96,7 @@ export function CategoryEditor({ localCategories, setLocalCategories, setCustomB
                 background: cat.type === "necesidad" ? T.accent + "18" : "#7c3aed18",
                 color: cat.type === "necesidad" ? T.accent : "#7c3aed",
               }} className="text-[10px] font-semibold px-2 py-0.5 rounded-full shrink-0">
-                {cat.type === "necesidad" ? "Necesidad" : "Deseo"}
+                {cat.type === "necesidad" ? "Esencial" : "Flexible"}
               </span>
               <button onClick={() => { setEditingCat({ isNew: false, ...cat }); setConfirmDeleteCat(null); setShowEmojiPicker(false); }}
                 style={{ color: T.muted }}
@@ -195,10 +195,15 @@ export function CategoryEditor({ localCategories, setLocalCategories, setCustomB
                     color: editingCat.type === t ? "white" : T.ink2,
                     borderColor: editingCat.type === t ? (t === "necesidad" ? T.accent : "#7c3aed") : T.line,
                   }}
-                  className="flex-1 py-2.5 border rounded-xl text-xs font-semibold transition">
-                  {t === "necesidad" ? "Necesidad" : "Deseo"}
+                  className="flex-1 py-2.5 border-2 rounded-xl text-xs font-bold transition">
+                  {t === "necesidad" ? "Esencial" : "Flexible"}
                 </button>
               ))}
+            </div>
+            <div style={{ color: T.muted }} className="text-xs mt-2 leading-relaxed">
+              {editingCat.type === "necesidad"
+                ? "Esencial: gastos fijos que no podés recortar — alquiler, comida, salud, servicios."
+                : "Flexible: gastos ajustables si el mes aprieta — entretenimiento, ropa, salidas."}
             </div>
           </div>
 

@@ -39,7 +39,7 @@ function BudgetItem({ cat, spent, budget }) {
   );
 }
 
-function BudgetGroup({ label, cats, byCat, budgets }) {
+function BudgetGroup({ label, color, cats, byCat, budgets }) {
   const totalSpent  = cats.reduce((s, c) => s + (byCat[c.id]  || 0), 0);
   const totalBudget = cats.reduce((s, c) => s + (budgets[c.id] || 0), 0);
   const over = totalBudget > 0 && totalSpent > totalBudget;
@@ -54,7 +54,7 @@ function BudgetGroup({ label, cats, byCat, budgets }) {
   return (
     <div>
       <div className="flex items-center justify-between mb-4">
-        <span style={{ color: T.muted }} className="text-[11px] font-bold tracking-[0.18em] uppercase">{label}</span>
+        <span style={{ color: color || T.muted }} className="text-[11px] font-bold tracking-[0.18em] uppercase">{label}</span>
         <span style={{ ...fontMono }} className="text-sm tabular-nums">
           <span style={{ color: over ? T.bad : T.ink, fontWeight: 600 }}>{fmt(totalSpent)}</span>
           {totalBudget > 0 && <span style={{ color: T.muted }}> / {fmt(totalBudget)}</span>}
@@ -74,10 +74,18 @@ export function BudgetSection({ byCat, budgets, categories }) {
   const des = categories.filter(c => c.type === "deseo");
   return (
     <Card className="mb-8">
-      <h3 style={{ color: T.ink, fontWeight: 700 }} className="text-base font-bold mb-6 tracking-tight">Presupuesto del período</h3>
+      <div className="flex items-start justify-between mb-6 gap-3">
+        <h3 style={{ color: T.ink, fontWeight: 700 }} className="text-base font-bold tracking-tight">Presupuesto del período</h3>
+        <div className="text-xs leading-snug text-right shrink-0">
+          <span style={{ color: T.accent, fontWeight: 700 }}>Esencial</span>
+          <span style={{ color: T.muted }}> = fijo &nbsp;·&nbsp; </span>
+          <span style={{ color: "#7c3aed", fontWeight: 700 }}>Flexible</span>
+          <span style={{ color: T.muted }}> = ajustable</span>
+        </div>
+      </div>
       <div className="space-y-6">
-        <BudgetGroup label="Necesidades" cats={nec} byCat={byCat} budgets={budgets} />
-        <BudgetGroup label="Deseos" cats={des} byCat={byCat} budgets={budgets} />
+        <BudgetGroup label="Esencial" color={T.accent} cats={nec} byCat={byCat} budgets={budgets} />
+        <BudgetGroup label="Flexible" color="#7c3aed" cats={des} byCat={byCat} budgets={budgets} />
       </div>
     </Card>
   );

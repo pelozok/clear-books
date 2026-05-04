@@ -292,12 +292,12 @@ export function SettingsPage({ config, categories, expenses, currentMonth, onSav
             </SettingsSection>
 
             <SettingsSection id="presupuesto" title="Presupuesto por categoría"
-              subtitle={payFrequency === "quincenal" ? "Ingresá el monto por quincena — se muestra el doble en el dashboard mensual" : "Vacío = calculado automático según tu ingreso"}>
+              subtitle={payFrequency === "quincenal" ? "Ingresá el monto por quincena · vacío = calculado automático" : "Vacío = calculado automático según tu ingreso"}>
               <div className="space-y-5">
                 {["necesidad", "deseo"].map(type => (
                   <div key={type}>
-                    <div style={{ color: T.muted }} className="text-[10px] font-bold tracking-[0.2em] uppercase mb-3">
-                      {type === "necesidad" ? "Necesidades" : "Deseos"}
+                    <div style={{ color: type === "necesidad" ? T.accent : "#7c3aed" }} className="text-[10px] font-bold tracking-[0.2em] uppercase mb-3">
+                      {type === "necesidad" ? "Esencial" : "Flexible"}
                     </div>
                     <div className="space-y-2.5">
                       {localCategories.filter(c => c.type === type).map(cat => {
