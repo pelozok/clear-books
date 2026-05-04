@@ -3,11 +3,19 @@ import { T, fontMono, fontBody } from "../lib/constants.js";
 import { todayISO, monthKey } from "../lib/helpers.js";
 import { Field, Modal } from "./ui.jsx";
 
-export function AddExpenseModal({ onAdd, onClose, currentMonth, categories }) {
+export function AddExpenseModal({ onAdd, onClose, currentMonth, currentHalf, categories }) {
   const [amount,      setAmount]      = useState("");
   const [currency,    setCurrency]    = useState("CRC");
   const [category,    setCategory]    = useState(categories[0]?.id || "");
-  const defaultDate = monthKey(todayISO()) === currentMonth ? todayISO() : `${currentMonth}-01`;
+  const today = todayISO();
+  const defaultDate = (() => {
+    if (monthKey(today) !== currentMonth) {
+      return currentHalf === 2 ? `${currentMonth}-16` : `${currentMonth}-01`;
+    }
+    if (currentHalf === 1 && parseInt(today.split("-")[2]) > 15) return `${currentMonth}-15`;
+    if (currentHalf === 2 && parseInt(today.split("-")[2]) <= 15) return `${currentMonth}-16`;
+    return today;
+  })();
   const [date,        setDate]        = useState(defaultDate);
   const [description, setDescription] = useState("");
 

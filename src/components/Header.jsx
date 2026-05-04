@@ -1,11 +1,12 @@
 import { useState, useEffect, useRef } from "react";
 import { Settings, LogOut, ChevronDown } from "lucide-react";
 import { T, fontSans, fontBody } from "../lib/constants.js";
-import { monthLabel } from "../lib/helpers.js";
+import { monthLabel, quincenaLabel } from "../lib/helpers.js";
 
-export function Header({ config, user, currentMonth, setCurrentMonth, months, onOpenSettings, onSignOut }) {
+export function Header({ config, user, currentMonth, setCurrentMonth, currentHalf, setCurrentHalf, months, onOpenSettings, onSignOut }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef(null);
+  const isQ = config?.payFrequency === "quincenal";
 
   useEffect(() => {
     const close = (e) => { if (!menuRef.current?.contains(e.target)) setMenuOpen(false); };
@@ -14,6 +15,18 @@ export function Header({ config, user, currentMonth, setCurrentMonth, months, on
   }, []);
 
   const firstName = user?.displayName?.split(" ")[0] || "";
+
+  // Build quincena options: for each available month, two halves
+  const quincenaOptions = months.flatMap(m => [
+    { month: m, half: 1 },
+    { month: m, half: 2 },
+  ]);
+
+  const handleQuincenaChange = (e) => {
+    const [y, m, h] = e.target.value.split("-");
+    setCurrentMonth(`${y}-${m}`);
+    setCurrentHalf(parseInt(h));
+  };
 
   return (
     <header className="flex items-start justify-between mb-10 sm:mb-14">
@@ -27,11 +40,25 @@ export function Header({ config, user, currentMonth, setCurrentMonth, months, on
           Finanzas
         </h1>
         <div className="mt-4">
-          <select value={currentMonth} onChange={e => setCurrentMonth(e.target.value)}
-            style={{ background: "white", borderColor: T.line, color: T.ink2, ...fontBody }}
-            className="px-3 py-1.5 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400 transition">
-            {months.map(m => <option key={m} value={m}>{monthLabel(m)}</option>)}
-          </select>
+          {isQ ? (
+            <select
+              value={`${currentMonth}-${currentHalf}`}
+              onChange={handleQuincenaChange}
+              style={{ background: "white", borderColor: T.line, color: T.ink2, ...fontBody }}
+              className="px-3 py-1.5 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400 transition">
+              {quincenaOptions.map(({ month, half }) => (
+                <option key={`${month}-${half}`} value={`${month}-${half}`}>
+                  {quincenaLabel(month, half)}
+                </option>
+              ))}
+            </select>
+          ) : (
+            <select value={currentMonth} onChange={e => setCurrentMonth(e.target.value)}
+              style={{ background: "white", borderColor: T.line, color: T.ink2, ...fontBody }}
+              className="px-3 py-1.5 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400 transition">
+              {months.map(m => <option key={m} value={m}>{monthLabel(m)}</option>)}
+            </select>
+          )}
         </div>
       </div>
 

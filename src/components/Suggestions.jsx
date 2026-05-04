@@ -1,13 +1,13 @@
 import { Sparkles } from "lucide-react";
 import { T, fontSans } from "../lib/constants.js";
-import { fmt, toCRC, monthKey } from "../lib/helpers.js";
+import { fmt, toCRC } from "../lib/helpers.js";
 
-export function Suggestions({ income, totals, config, expensesCount, categories, budgets, expenses, currentMonth, rate }) {
+export function Suggestions({ income, totals, config, expensesCount, categories, budgets, prevPeriodExpenses, rate }) {
   const tips = [];
 
   if (expensesCount === 0) {
     tips.push({ tone: "neutral", title: "Empezá registrando tus gastos",
-      text: "Aún no tenés gastos este mes. Registrá todo, hasta lo más pequeño — ahí está el aprendizaje." });
+      text: "Aún no tenés gastos este período. Registrá todo, hasta lo más pequeño — ahí está el aprendizaje." });
   } else {
     const overBudget = [];
     const nearBudget = [];
@@ -16,7 +16,7 @@ export function Suggestions({ income, totals, config, expensesCount, categories,
       const budget = budgets[cat.id] || 0;
       if (budget <= 0 || spent <= 0) return;
       const pct = spent / budget * 100;
-      if (pct > 100) overBudget.push({ cat, spent, budget, pct });
+      if (pct >= 100) overBudget.push({ cat, spent, budget, pct });
       else if (pct >= 80) nearBudget.push({ cat, spent, budget, pct });
     });
 
@@ -32,10 +32,9 @@ export function Suggestions({ income, totals, config, expensesCount, categories,
         text: `Llevás ${fmt(spent)} de ${fmt(budget)} presupuestados (${Math.round(pct)}%).` });
     });
 
-    const [y, m] = currentMonth.split("-").map(Number);
-    const prevMonth = monthKey(new Date(y, m - 2, 1).toISOString());
+    // Comparar con período anterior
     const byCatPrev = {};
-    expenses.filter(e => monthKey(e.date) === prevMonth).forEach(e => {
+    (prevPeriodExpenses || []).forEach(e => {
       byCatPrev[e.category] = (byCatPrev[e.category] || 0) + toCRC(e.amount, e.currency || "CRC", rate);
     });
 
@@ -52,15 +51,15 @@ export function Suggestions({ income, totals, config, expensesCount, categories,
 
       increases.sort((a, b) => b.change - a.change).slice(0, 2).forEach(({ cat, curr, prev, change }) => {
         tips.push({ tone: "warn",
-          title: `${cat.emoji} ${cat.label} subió ${Math.round(change)}% vs el mes anterior`,
-          text: `Este mes: ${fmt(curr)} · Mes anterior: ${fmt(prev)}.` });
+          title: `${cat.emoji} ${cat.label} subió ${Math.round(change)}% vs el período anterior`,
+          text: `Este período: ${fmt(curr)} · Anterior: ${fmt(prev)}.` });
       });
 
       if (decreases.length > 0 && !tips.some(t => t.tone === "good")) {
         const best = decreases.sort((a, b) => a.change - b.change)[0];
         tips.push({ tone: "good",
-          title: `${best.cat.emoji} ${best.cat.label} bajó ${Math.round(Math.abs(best.change))}% vs el mes anterior`,
-          text: `Este mes: ${fmt(best.curr)} · Mes anterior: ${fmt(best.prev)}.` });
+          title: `${best.cat.emoji} ${best.cat.label} bajó ${Math.round(Math.abs(best.change))}% vs el período anterior`,
+          text: `Este período: ${fmt(best.curr)} · Anterior: ${fmt(best.prev)}.` });
       }
     }
 
@@ -84,7 +83,7 @@ export function Suggestions({ income, totals, config, expensesCount, categories,
     if (tips.length === 0) {
       tips.push({ tone: "good",
         title: "Todo bajo control",
-        text: "Todos los presupuestos dentro del límite y sin cambios bruscos respecto al mes anterior." });
+        text: "Todos los presupuestos dentro del límite y sin cambios bruscos respecto al período anterior." });
     }
   }
 

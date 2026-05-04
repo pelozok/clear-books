@@ -1,6 +1,6 @@
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import { T, fontMono } from "../lib/constants.js";
-import { getCat, fmt, toCRC, monthKey, monthLabel } from "../lib/helpers.js";
+import { getCat, fmt, toCRC, monthLabel } from "../lib/helpers.js";
 
 export function CategoryChart({ byCat, categories }) {
   const data  = Object.entries(byCat)
@@ -41,27 +41,24 @@ export function CategoryChart({ byCat, categories }) {
   );
 }
 
-export function MonthComparisonChart({ expenses, currentMonth, categories, rate }) {
-  const [y, m] = currentMonth.split("-").map(Number);
-  const prevMonth = monthKey(new Date(y, m - 2, 1).toISOString());
+// Accepts pre-filtered expense arrays for current and previous period
+export function MonthComparisonChart({ currentExpenses, prevExpenses, categories, rate, prevLabel }) {
+  const sumByCat = (exps) => {
+    const m = {};
+    exps.forEach(e => {
+      m[e.category] = (m[e.category] || 0) + toCRC(e.amount, e.currency || "CRC", rate);
+    });
+    return m;
+  };
 
-  const byCatCurrent = {};
-  expenses.filter(e => monthKey(e.date) === currentMonth).forEach(e => {
-    byCatCurrent[e.category] = (byCatCurrent[e.category] || 0) + toCRC(e.amount, e.currency || "CRC", rate);
-  });
-  const byCatPrev = {};
-  expenses.filter(e => monthKey(e.date) === prevMonth).forEach(e => {
-    byCatPrev[e.category] = (byCatPrev[e.category] || 0) + toCRC(e.amount, e.currency || "CRC", rate);
-  });
-
-  const hasPrev = Object.keys(byCatPrev).length > 0;
+  const byCatCurrent = sumByCat(currentExpenses);
+  const byCatPrev    = sumByCat(prevExpenses);
+  const hasPrev      = Object.keys(byCatPrev).length > 0;
 
   const data = categories
     .filter(cat => (byCatCurrent[cat.id] || 0) > 0 || (byCatPrev[cat.id] || 0) > 0)
     .map(cat => ({
-      name: cat.emoji,
-      label: cat.label,
-      color: cat.color,
+      name: cat.emoji, label: cat.label, color: cat.color,
       actual: Math.round(byCatCurrent[cat.id] || 0),
       anterior: Math.round(byCatPrev[cat.id] || 0),
     }))
@@ -69,7 +66,7 @@ export function MonthComparisonChart({ expenses, currentMonth, categories, rate 
     .slice(0, 8);
 
   if (data.length === 0) return (
-    <div style={{ color: T.muted }} className="text-sm text-center py-8">Sin datos este mes</div>
+    <div style={{ color: T.muted }} className="text-sm text-center py-8">Sin datos este período</div>
   );
 
   return (
@@ -77,15 +74,15 @@ export function MonthComparisonChart({ expenses, currentMonth, categories, rate 
       <div className="flex items-center gap-4 mb-3">
         <div className="flex items-center gap-1.5">
           <div style={{ background: T.accent }} className="w-2.5 h-2.5 rounded-sm" />
-          <span style={{ color: T.muted }} className="text-xs">Este mes</span>
+          <span style={{ color: T.muted }} className="text-xs">Este período</span>
         </div>
         {hasPrev ? (
           <div className="flex items-center gap-1.5">
             <div style={{ background: T.line }} className="w-2.5 h-2.5 rounded-sm" />
-            <span style={{ color: T.muted }} className="text-xs">{monthLabel(prevMonth)}</span>
+            <span style={{ color: T.muted }} className="text-xs">{prevLabel || "Período anterior"}</span>
           </div>
         ) : (
-          <span style={{ color: T.muted }} className="text-xs italic">Sin datos del mes anterior</span>
+          <span style={{ color: T.muted }} className="text-xs italic">Sin datos del período anterior</span>
         )}
       </div>
       <div className="h-52">
@@ -97,7 +94,7 @@ export function MonthComparisonChart({ expenses, currentMonth, categories, rate 
             <Tooltip
               contentStyle={{ background: T.ink, border: "none", borderRadius: 8, fontSize: 11, fontFamily: "'Plus Jakarta Sans'" }}
               labelStyle={{ color: "white" }} itemStyle={{ color: "white" }}
-              formatter={(v, name) => [fmt(v), name === "actual" ? "Este mes" : "Mes anterior"]}
+              formatter={(v, name) => [fmt(v), name === "actual" ? "Este período" : "Período anterior"]}
               labelFormatter={(_, payload) => payload?.[0]?.payload?.label || ""} />
             {hasPrev && <Bar dataKey="anterior" fill={T.bg2} radius={[4, 4, 0, 0]} name="anterior" />}
             <Bar dataKey="actual" radius={[4, 4, 0, 0]} name="actual">

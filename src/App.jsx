@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { storage } from "./storage.js";
 import * as XLSX from "xlsx";
 import { T, FONTS, fontSans, fontBody, fontMono, DEFAULT_CATEGORIES } from "./lib/constants.js";
-import { fetchExchangeRate, toCRC, fmt, fmtUSD, getCat, getBudgets, todayISO, monthKey, monthLabel, nextMonthKey } from "./lib/helpers.js";
+import { fetchExchangeRate, toCRC, fmt, fmtUSD, getCat, getBudgets, todayISO, monthKey, monthLabel, nextMonthKey, todayHalf } from "./lib/helpers.js";
 import { Field } from "./components/ui.jsx";
 import { Header } from "./components/Header.jsx";
 import { Dashboard } from "./components/Dashboard.jsx";
@@ -15,6 +15,7 @@ export default function App({ user, onSignOut }) {
   const [page,           setPage]           = useState("dashboard");
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [currentMonth,   setCurrentMonth]   = useState(monthKey(todayISO()));
+  const [currentHalf,    setCurrentHalf]    = useState(todayHalf());
 
   useEffect(() => {
     (async () => {
@@ -138,12 +139,16 @@ export default function App({ user, onSignOut }) {
       ) : (
         <div className="max-w-6xl mx-auto px-4 sm:px-8 py-8 sm:py-12">
           <Header
-            config={config} user={user} currentMonth={currentMonth} setCurrentMonth={setCurrentMonth}
+            config={config} user={user}
+            currentMonth={currentMonth} setCurrentMonth={setCurrentMonth}
+            currentHalf={currentHalf} setCurrentHalf={setCurrentHalf}
             months={availableMonths(expenses, currentMonth)}
             onOpenSettings={() => setPage("settings")} onSignOut={onSignOut}
           />
           <Dashboard
-            config={config} expenses={expenses} currentMonth={currentMonth} categories={categories}
+            config={config} expenses={expenses}
+            currentMonth={currentMonth} currentHalf={currentHalf}
+            categories={categories}
             onAdd={(exp) => saveExpenses([exp, ...expenses])}
             onDelete={(id) => saveExpenses(expenses.filter(e => e.id !== id))}
             onExport={exportExcel}

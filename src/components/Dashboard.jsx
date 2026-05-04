@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import { Plus, Download, Settings } from "lucide-react";
 import { T, fontBody, DEFAULT_BUDGET_PCTS } from "../lib/constants.js";
-import { toCRC, fmt, fmtUSD, monthKey, getCat } from "../lib/helpers.js";
+import { toCRC, fmt, fmtUSD, monthKey, getCat, isFirstQ, quincenaLabel, prevQuincena } from "../lib/helpers.js";
 import { SummaryCard, SavingsAlertBanner, SavingsBar, Card, CardTitle, EmptyState } from "./ui.jsx";
 import { BudgetSection } from "./BudgetSection.jsx";
 import { CategoryChart, MonthComparisonChart } from "./Charts.jsx";
@@ -9,55 +9,66 @@ import { Suggestions } from "./Suggestions.jsx";
 import { ExpenseList } from "./ExpenseList.jsx";
 import { AddExpenseModal } from "./AddExpenseModal.jsx";
 
-export function Dashboard({ config, expenses, currentMonth, categories, onAdd, onDelete, onExport, onOpenSettings }) {
+export function Dashboard({ config, expenses, currentMonth, currentHalf, categories, onAdd, onDelete, onExport, onOpenSettings }) {
   const [showAdd, setShowAdd] = useState(false);
 
-  const rate       = config.exchangeRate || 515;
-  const isQ        = config.payFrequency === "quincenal";
-  const multiplier = isQ ? 2 : 1;
+  const rate = config.exchangeRate || 515;
+  const isQ  = config.payFrequency === "quincenal";
 
-  const monthIncome    = config.incomeByMonth?.[currentMonth];
-  const incomeUSD      = monthIncome !== undefined ? monthIncome.incomeUSD : (config.incomeUSD || 0);
-  const incomeCRC      = monthIncome !== undefined ? monthIncome.incomeCRC : (config.incomeCRC || 0);
-  const incomePerPeriod = incomeCRC + incomeUSD * rate;
-  const totalIncomeCRC  = incomePerPeriod * multiplier;
-  const hasSavingsCard  = config.savingsBalanceUSD !== undefined;
+  const monthIncome     = config.incomeByMonth?.[currentMonth];
+  const incomeUSD       = monthIncome !== undefined ? monthIncome.incomeUSD : (config.incomeUSD || 0);
+  const incomeCRC       = monthIncome !== undefined ? monthIncome.incomeCRC : (config.incomeCRC || 0);
+  const totalIncomeCRC  = incomeCRC + incomeUSD * rate; // always per-period (quincena or mes)
+  const hasSavingsCard  = config.savingsBalanceUSD != null && config.savingsBalanceUSD > 0;
+  const hasSavingsGoal  = config.savingsRate > 0;
 
   const incomeSubtitle = (() => {
-    if (!isQ) {
-      if (incomeUSD > 0 && incomeCRC > 0) return `${fmtUSD(incomeUSD)} + ${fmt(incomeCRC)}`;
-      if (incomeUSD > 0) return `${fmtUSD(incomeUSD)} · T.C. ₡${rate.toLocaleString("es-CR")}`;
-      return null;
-    }
-    if (incomeUSD > 0 && incomeCRC > 0) return `${fmtUSD(incomeUSD)} + ${fmt(incomeCRC)} por quincena`;
-    if (incomeUSD > 0) return `${fmtUSD(incomeUSD)}/quincena · T.C. ₡${rate.toLocaleString("es-CR")}`;
-    if (incomeCRC > 0) return `${fmt(incomeCRC)} por quincena`;
+    if (incomeUSD > 0 && incomeCRC > 0) return `${fmtUSD(incomeUSD)} + ${fmt(incomeCRC)}`;
+    if (incomeUSD > 0) return `${fmtUSD(incomeUSD)} · T.C. ₡${rate.toLocaleString("es-CR")}`;
     return null;
   })();
 
-  const monthExpenses = useMemo(
-    () => expenses.filter(e => monthKey(e.date) === currentMonth),
-    [expenses, currentMonth]
-  );
+  // Filter expenses to the current period (quincena or full month)
+  const periodExpenses = useMemo(() => {
+    return expenses.filter(e => {
+      if (monthKey(e.date) !== currentMonth) return false;
+      if (!isQ) return true;
+      return currentHalf === 1 ? isFirstQ(e.date) : !isFirstQ(e.date);
+    });
+  }, [expenses, currentMonth, currentHalf, isQ]);
+
+  // Previous period expenses for comparison
+  const prevPeriodExpenses = useMemo(() => {
+    if (isQ) {
+      const { month: pm, half: ph } = prevQuincena(currentMonth, currentHalf);
+      return expenses.filter(e => {
+        if (monthKey(e.date) !== pm) return false;
+        return ph === 1 ? isFirstQ(e.date) : !isFirstQ(e.date);
+      });
+    }
+    const [y, m] = currentMonth.split("-").map(Number);
+    const prevMk = monthKey(new Date(y, m - 2, 1).toISOString());
+    return expenses.filter(e => monthKey(e.date) === prevMk);
+  }, [expenses, currentMonth, currentHalf, isQ]);
 
   const totals = useMemo(() => {
-    const total = monthExpenses.reduce((s, e) => s + toCRC(e.amount, e.currency || "CRC", rate), 0);
+    const total = periodExpenses.reduce((s, e) => s + toCRC(e.amount, e.currency || "CRC", rate), 0);
     const byCat = {}, byType = { necesidad: 0, deseo: 0 };
-    monthExpenses.forEach(e => {
+    periodExpenses.forEach(e => {
       const amtCRC = toCRC(e.amount, e.currency || "CRC", rate);
       byCat[e.category] = (byCat[e.category] || 0) + amtCRC;
       const catType = categories.length ? getCat(e.category, categories).type : "otros";
       byType[catType] = (byType[catType] || 0) + amtCRC;
     });
     return { total, byCat, byType };
-  }, [monthExpenses, rate, categories]);
+  }, [periodExpenses, rate, categories]);
 
-  // Budgets: custom entries are per-period (quincena or mes); multiply by 2 for monthly comparison
+  // Budgets are always per-period (no ×2 needed since expenses are also per-period now)
   const budgets = Object.fromEntries(
     categories.map(c => [
       c.id,
       config.budgets?.[c.id] != null
-        ? config.budgets[c.id] * multiplier
+        ? config.budgets[c.id]
         : Math.round(totalIncomeCRC * (DEFAULT_BUDGET_PCTS[c.id] || 0)),
     ])
   );
@@ -65,6 +76,8 @@ export function Dashboard({ config, expenses, currentMonth, categories, onAdd, o
   const savingsGoal = totalIncomeCRC * (config.savingsRate / 100);
   const remaining   = totalIncomeCRC - totals.total;
   const disponible  = totalIncomeCRC - savingsGoal - totals.total;
+
+  const periodLabel = isQ ? quincenaLabel(currentMonth, currentHalf) : null;
 
   const gridCols = hasSavingsCard
     ? "grid-cols-2 sm:grid-cols-3 lg:grid-cols-5"
@@ -91,22 +104,22 @@ export function Dashboard({ config, expenses, currentMonth, categories, onAdd, o
   return (
     <>
       <section className={`grid ${gridCols} gap-3 sm:gap-4 mb-8`}>
+        <SummaryCard label="Ingreso" value={fmt(totalIncomeCRC)} subtitle={incomeSubtitle} tone="ink" />
         <SummaryCard
-          label={isQ ? "Ingreso mensual (×2)" : "Ingreso mensual"}
-          value={fmt(totalIncomeCRC)} subtitle={incomeSubtitle} tone="ink" />
-        <SummaryCard
-          label="Gastos del mes" value={fmt(totals.total)}
+          label="Gastos del período" value={fmt(totals.total)}
           subtitle={`${totalIncomeCRC > 0 ? Math.round(totals.total / totalIncomeCRC * 100) : 0}% del ingreso`}
           tone="bad" />
         <SummaryCard
           label="Disponible"
           value={fmt(disponible)}
-          subtitle={disponible < 0 ? "Estás usando tus ahorros" : "Después de apartar el ahorro"}
+          subtitle={disponible < 0 ? "Estás usando tus ahorros" : hasSavingsGoal ? "Después de apartar el ahorro" : null}
           tone={disponible < 0 ? "bad" : "good"} />
-        <SummaryCard
-          label="Meta de ahorro" value={fmt(savingsGoal)}
-          subtitle={`${config.savingsRate}% del ingreso${isQ ? " mensual" : ""}`}
-          tone="accent" />
+        {hasSavingsGoal && (
+          <SummaryCard
+            label="Meta de ahorro" value={fmt(savingsGoal)}
+            subtitle={`${config.savingsRate}% del ingreso`}
+            tone="accent" />
+        )}
         {hasSavingsCard && (
           <SummaryCard
             label="Cuenta USD"
@@ -116,8 +129,12 @@ export function Dashboard({ config, expenses, currentMonth, categories, onAdd, o
         )}
       </section>
 
-      <SavingsAlertBanner remaining={remaining} savingsGoal={savingsGoal} savingsRate={config.savingsRate} />
-      <SavingsBar progress={remaining} goal={savingsGoal} />
+      {hasSavingsGoal && (
+        <>
+          <SavingsAlertBanner remaining={remaining} savingsGoal={savingsGoal} savingsRate={config.savingsRate} />
+          <SavingsBar progress={remaining} goal={savingsGoal} />
+        </>
+      )}
 
       <div className="my-8 flex items-center gap-3 flex-wrap">
         <button onClick={() => setShowAdd(true)}
@@ -133,37 +150,44 @@ export function Dashboard({ config, expenses, currentMonth, categories, onAdd, o
       </div>
 
       <Suggestions
-        income={totalIncomeCRC} totals={totals} config={config} expensesCount={monthExpenses.length}
-        categories={categories} budgets={budgets} expenses={expenses} currentMonth={currentMonth} rate={rate}
+        income={totalIncomeCRC} totals={totals} config={config} expensesCount={periodExpenses.length}
+        categories={categories} budgets={budgets} prevPeriodExpenses={prevPeriodExpenses} rate={rate}
       />
 
-      <BudgetSection byCat={totals.byCat} budgets={budgets} categories={categories} isQuincenal={isQ} />
+      <BudgetSection byCat={totals.byCat} budgets={budgets} categories={categories} />
 
-      {monthExpenses.length > 0 ? (
+      {periodExpenses.length > 0 ? (
         <section className="grid grid-cols-1 lg:grid-cols-5 gap-4 mb-8">
           <Card className="lg:col-span-2">
             <CardTitle>Por categoría</CardTitle>
             <CategoryChart byCat={totals.byCat} categories={categories} />
           </Card>
           <Card className="lg:col-span-3">
-            <CardTitle>Este mes vs mes anterior</CardTitle>
-            <MonthComparisonChart expenses={expenses} currentMonth={currentMonth} categories={categories} rate={rate} />
+            <CardTitle>{isQ ? "Esta quincena vs quincena anterior" : "Este mes vs mes anterior"}</CardTitle>
+            <MonthComparisonChart
+              currentExpenses={periodExpenses} prevExpenses={prevPeriodExpenses}
+              categories={categories} rate={rate}
+              prevLabel={isQ ? quincenaLabel(...Object.values(prevQuincena(currentMonth, currentHalf))) : null}
+            />
           </Card>
         </section>
       ) : (
         <EmptyState onAdd={() => setShowAdd(true)} />
       )}
 
-      {monthExpenses.length > 0 && (
+      {periodExpenses.length > 0 && (
         <section className="mt-10">
-          <h2 style={{ color: T.ink, fontWeight: 700 }} className="text-xl font-bold mb-5">Movimientos del mes</h2>
-          <ExpenseList expenses={monthExpenses} exchangeRate={rate} onDelete={onDelete} categories={categories} />
+          <h2 style={{ color: T.ink, fontWeight: 700 }} className="text-xl font-bold mb-5">
+            {isQ ? `Movimientos · ${periodLabel}` : "Movimientos del mes"}
+          </h2>
+          <ExpenseList expenses={periodExpenses} exchangeRate={rate} onDelete={onDelete} categories={categories} />
         </section>
       )}
 
       {showAdd && (
         <AddExpenseModal
           currentMonth={currentMonth}
+          currentHalf={isQ ? currentHalf : null}
           categories={categories}
           onAdd={(exp) => { onAdd(exp); setShowAdd(false); }}
           onClose={() => setShowAdd(false)} />
