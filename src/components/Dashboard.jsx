@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import { Plus, Download, Settings } from "lucide-react";
-import { T, fontBody } from "../lib/constants.js";
-import { toCRC, fmt, fmtUSD, monthKey, getBudgets, getCat } from "../lib/helpers.js";
+import { T, fontBody, DEFAULT_BUDGET_PCTS } from "../lib/constants.js";
+import { toCRC, fmt, fmtUSD, monthKey, getCat } from "../lib/helpers.js";
 import { SummaryCard, SavingsAlertBanner, SavingsBar, Card, CardTitle, EmptyState } from "./ui.jsx";
 import { BudgetSection } from "./BudgetSection.jsx";
 import { CategoryChart, MonthComparisonChart } from "./Charts.jsx";
@@ -13,26 +13,25 @@ export function Dashboard({ config, expenses, currentMonth, categories, onAdd, o
   const [showAdd, setShowAdd] = useState(false);
 
   const rate       = config.exchangeRate || 515;
-  const multiplier = config.payFrequency === "quincenal" ? 2 : 1;
+  const isQ        = config.payFrequency === "quincenal";
+  const multiplier = isQ ? 2 : 1;
 
   const monthIncome    = config.incomeByMonth?.[currentMonth];
   const incomeUSD      = monthIncome !== undefined ? monthIncome.incomeUSD : (config.incomeUSD || 0);
   const incomeCRC      = monthIncome !== undefined ? monthIncome.incomeCRC : (config.incomeCRC || 0);
-  const totalIncomeCRC = (incomeCRC + incomeUSD * rate) * multiplier;
-  const hasSavingsCard = config.savingsBalanceUSD !== undefined;
-
-  const freqLabel = config.payFrequency === "quincenal" ? "quincena" : "mes";
+  const incomePerPeriod = incomeCRC + incomeUSD * rate;
+  const totalIncomeCRC  = incomePerPeriod * multiplier;
+  const hasSavingsCard  = config.savingsBalanceUSD !== undefined;
 
   const incomeSubtitle = (() => {
-    const hasUSD = incomeUSD > 0;
-    const hasCRC = incomeCRC > 0;
-    if (config.payFrequency === "quincenal") {
-      if (hasUSD && hasCRC) return `Quincenal: ${fmtUSD(incomeUSD)} + ${fmt(incomeCRC)}`;
-      if (hasUSD) return `Quincenal: ${fmtUSD(incomeUSD)} · T.C. ₡${rate.toLocaleString("es-CR")}`;
-      if (hasCRC) return `Quincenal: ${fmt(incomeCRC)}`;
+    if (!isQ) {
+      if (incomeUSD > 0 && incomeCRC > 0) return `${fmtUSD(incomeUSD)} + ${fmt(incomeCRC)}`;
+      if (incomeUSD > 0) return `${fmtUSD(incomeUSD)} · T.C. ₡${rate.toLocaleString("es-CR")}`;
+      return null;
     }
-    if (hasUSD && hasCRC) return `${fmtUSD(incomeUSD)} + ${fmt(incomeCRC)}`;
-    if (hasUSD) return `${fmtUSD(incomeUSD)} · T.C. ₡${rate.toLocaleString("es-CR")}`;
+    if (incomeUSD > 0 && incomeCRC > 0) return `${fmtUSD(incomeUSD)} + ${fmt(incomeCRC)} por quincena`;
+    if (incomeUSD > 0) return `${fmtUSD(incomeUSD)}/quincena · T.C. ₡${rate.toLocaleString("es-CR")}`;
+    if (incomeCRC > 0) return `${fmt(incomeCRC)} por quincena`;
     return null;
   })();
 
@@ -53,10 +52,19 @@ export function Dashboard({ config, expenses, currentMonth, categories, onAdd, o
     return { total, byCat, byType };
   }, [monthExpenses, rate, categories]);
 
+  // Budgets: custom entries are per-period (quincena or mes); multiply by 2 for monthly comparison
+  const budgets = Object.fromEntries(
+    categories.map(c => [
+      c.id,
+      config.budgets?.[c.id] != null
+        ? config.budgets[c.id] * multiplier
+        : Math.round(totalIncomeCRC * (DEFAULT_BUDGET_PCTS[c.id] || 0)),
+    ])
+  );
+
   const savingsGoal = totalIncomeCRC * (config.savingsRate / 100);
   const remaining   = totalIncomeCRC - totals.total;
   const disponible  = totalIncomeCRC - savingsGoal - totals.total;
-  const budgets     = getBudgets(config, totalIncomeCRC, categories);
 
   const gridCols = hasSavingsCard
     ? "grid-cols-2 sm:grid-cols-3 lg:grid-cols-5"
@@ -83,19 +91,21 @@ export function Dashboard({ config, expenses, currentMonth, categories, onAdd, o
   return (
     <>
       <section className={`grid ${gridCols} gap-3 sm:gap-4 mb-8`}>
-        <SummaryCard label="Ingreso mensual" value={fmt(totalIncomeCRC)} subtitle={incomeSubtitle} tone="ink" />
         <SummaryCard
-          label={`Gastos del ${freqLabel}`} value={fmt(totals.total)}
+          label={isQ ? "Ingreso mensual (×2)" : "Ingreso mensual"}
+          value={fmt(totalIncomeCRC)} subtitle={incomeSubtitle} tone="ink" />
+        <SummaryCard
+          label="Gastos del mes" value={fmt(totals.total)}
           subtitle={`${totalIncomeCRC > 0 ? Math.round(totals.total / totalIncomeCRC * 100) : 0}% del ingreso`}
           tone="bad" />
         <SummaryCard
-          label="Disponible para gastar"
+          label="Disponible"
           value={fmt(disponible)}
           subtitle={disponible < 0 ? "Estás usando tus ahorros" : "Después de apartar el ahorro"}
           tone={disponible < 0 ? "bad" : "good"} />
         <SummaryCard
           label="Meta de ahorro" value={fmt(savingsGoal)}
-          subtitle={`${config.savingsRate}% del ingreso`}
+          subtitle={`${config.savingsRate}% del ingreso${isQ ? " mensual" : ""}`}
           tone="accent" />
         {hasSavingsCard && (
           <SummaryCard
@@ -127,7 +137,7 @@ export function Dashboard({ config, expenses, currentMonth, categories, onAdd, o
         categories={categories} budgets={budgets} expenses={expenses} currentMonth={currentMonth} rate={rate}
       />
 
-      <BudgetSection byCat={totals.byCat} budgets={budgets} categories={categories} />
+      <BudgetSection byCat={totals.byCat} budgets={budgets} categories={categories} isQuincenal={isQ} />
 
       {monthExpenses.length > 0 ? (
         <section className="grid grid-cols-1 lg:grid-cols-5 gap-4 mb-8">

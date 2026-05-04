@@ -101,8 +101,9 @@ export function SettingsPage({ config, categories, expenses, currentMonth, onSav
   };
 
   const inputCls = "flex-1 px-3 py-2.5 border rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400 transition";
-  const calcRate  = parseFloat(exchangeRate) || 515;
-  const calcTotal = (parseFloat(incomeCRC) || 0) + (parseFloat(incomeUSD) || 0) * calcRate;
+  const calcRate     = parseFloat(exchangeRate) || 515;
+  const calcPerPeriod = (parseFloat(incomeCRC) || 0) + (parseFloat(incomeUSD) || 0) * calcRate;
+  const calcTotal    = calcPerPeriod * (payFrequency === "quincenal" ? 2 : 1);
 
   return (
     <div className="min-h-screen" style={{ background: T.bg, color: T.ink, ...fontBody }}>
@@ -264,7 +265,8 @@ export function SettingsPage({ config, categories, expenses, currentMonth, onSav
                 expenses={expenses} />
             </SettingsSection>
 
-            <SettingsSection id="presupuesto" title="Presupuesto por categoría" subtitle="Vacío = calculado automático según tu ingreso">
+            <SettingsSection id="presupuesto" title="Presupuesto por categoría"
+              subtitle={payFrequency === "quincenal" ? "Ingresá el monto por quincena — se muestra el doble en el dashboard mensual" : "Vacío = calculado automático según tu ingreso"}>
               <div className="space-y-5">
                 {["necesidad", "deseo"].map(type => (
                   <div key={type}>
@@ -273,7 +275,8 @@ export function SettingsPage({ config, categories, expenses, currentMonth, onSav
                     </div>
                     <div className="space-y-2.5">
                       {localCategories.filter(c => c.type === type).map(cat => {
-                        const auto = Math.round(calcTotal * (DEFAULT_BUDGET_PCTS[cat.id] || 0));
+                        const autoMonthly = Math.round(calcTotal * (DEFAULT_BUDGET_PCTS[cat.id] || 0));
+                        const auto = payFrequency === "quincenal" ? Math.round(autoMonthly / 2) : autoMonthly;
                         return (
                           <div key={cat.id} className="flex items-center gap-3">
                             <div style={{ color: cat.color, background: cat.color + "15" }}

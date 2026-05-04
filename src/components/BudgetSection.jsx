@@ -49,7 +49,7 @@ function BudgetGroup({ label, cats, byCat, budgets, totalSpent, totalBudget }) {
   );
 }
 
-export function BudgetSection({ byCat, budgets, categories }) {
+export function BudgetSection({ byCat, budgets, categories, isQuincenal }) {
   const nec = categories.filter(c => c.type === "necesidad");
   const des = categories.filter(c => c.type === "deseo");
   const sumSpent  = cats => cats.reduce((s, c) => s + (byCat[c.id]  || 0), 0);
@@ -59,7 +59,12 @@ export function BudgetSection({ byCat, budgets, categories }) {
   );
   return (
     <Card className="mb-8">
-      <CardTitle>Presupuesto del mes</CardTitle>
+      <div className="flex items-center justify-between mb-4">
+        <span style={{ color: T.ink, fontWeight: 700 }} className="text-base font-bold tracking-tight">Presupuesto del mes</span>
+        {isQuincenal && (
+          <span style={{ color: T.muted }} className="text-xs">presupuesto por quincena ×2</span>
+        )}
+      </div>
       <div className="space-y-5">
         <BudgetGroup label="Necesidades" cats={sortPct(nec)} byCat={byCat} budgets={budgets}
           totalSpent={sumSpent(nec)} totalBudget={sumBudget(nec)} />
