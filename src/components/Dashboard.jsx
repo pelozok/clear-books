@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { Plus, Download, TrendingDown, TrendingUp, PiggyBank, Wallet, DollarSign } from "lucide-react";
+import { Plus, Download, Settings } from "lucide-react";
 import { T, fontBody } from "../lib/constants.js";
 import { toCRC, fmt, fmtUSD, monthKey, getBudgets, getCat } from "../lib/helpers.js";
 import { SummaryCard, SavingsAlertBanner, SavingsBar, Card, CardTitle, EmptyState } from "./ui.jsx";
@@ -9,20 +9,28 @@ import { Suggestions } from "./Suggestions.jsx";
 import { ExpenseList } from "./ExpenseList.jsx";
 import { AddExpenseModal } from "./AddExpenseModal.jsx";
 
-export function Dashboard({ config, expenses, currentMonth, categories, onAdd, onDelete, onExport }) {
+export function Dashboard({ config, expenses, currentMonth, categories, onAdd, onDelete, onExport, onOpenSettings }) {
   const [showAdd, setShowAdd] = useState(false);
 
-  const rate = config.exchangeRate || 515;
+  const rate       = config.exchangeRate || 515;
+  const multiplier = config.payFrequency === "quincenal" ? 2 : 1;
 
   const monthIncome    = config.incomeByMonth?.[currentMonth];
   const incomeUSD      = monthIncome !== undefined ? monthIncome.incomeUSD : (config.incomeUSD || 0);
   const incomeCRC      = monthIncome !== undefined ? monthIncome.incomeCRC : (config.incomeCRC || 0);
-  const totalIncomeCRC = incomeCRC + incomeUSD * rate;
+  const totalIncomeCRC = (incomeCRC + incomeUSD * rate) * multiplier;
   const hasSavingsCard = config.savingsBalanceUSD !== undefined;
+
+  const freqLabel = config.payFrequency === "quincenal" ? "quincena" : "mes";
 
   const incomeSubtitle = (() => {
     const hasUSD = incomeUSD > 0;
     const hasCRC = incomeCRC > 0;
+    if (config.payFrequency === "quincenal") {
+      if (hasUSD && hasCRC) return `Quincenal: ${fmtUSD(incomeUSD)} + ${fmt(incomeCRC)}`;
+      if (hasUSD) return `Quincenal: ${fmtUSD(incomeUSD)} · T.C. ₡${rate.toLocaleString("es-CR")}`;
+      if (hasCRC) return `Quincenal: ${fmt(incomeCRC)}`;
+    }
     if (hasUSD && hasCRC) return `${fmtUSD(incomeUSD)} + ${fmt(incomeCRC)}`;
     if (hasUSD) return `${fmtUSD(incomeUSD)} · T.C. ₡${rate.toLocaleString("es-CR")}`;
     return null;
@@ -39,7 +47,7 @@ export function Dashboard({ config, expenses, currentMonth, categories, onAdd, o
     monthExpenses.forEach(e => {
       const amtCRC = toCRC(e.amount, e.currency || "CRC", rate);
       byCat[e.category] = (byCat[e.category] || 0) + amtCRC;
-      const catType = getCat(e.category, categories).type;
+      const catType = categories.length ? getCat(e.category, categories).type : "otros";
       byType[catType] = (byType[catType] || 0) + amtCRC;
     });
     return { total, byCat, byType };
@@ -54,12 +62,30 @@ export function Dashboard({ config, expenses, currentMonth, categories, onAdd, o
     ? "grid-cols-2 sm:grid-cols-3 lg:grid-cols-5"
     : "grid-cols-2 lg:grid-cols-4";
 
+  if (categories.length === 0) {
+    return (
+      <div style={{ borderColor: T.line, background: "white" }} className="border-2 border-dashed rounded-lg p-10 text-center mt-4">
+        <div style={{ background: T.accentSoft, color: T.accent }} className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4">
+          <Settings size={26} />
+        </div>
+        <h3 style={{ color: T.ink, fontWeight: 700 }} className="text-xl font-bold mb-2">Sin categorías aún</h3>
+        <p style={{ color: T.muted }} className="text-sm mb-6 max-w-sm mx-auto leading-relaxed">
+          Agregá tus categorías de gastos para empezar a registrar movimientos y ver tu dashboard completo.
+        </p>
+        <button onClick={onOpenSettings} style={{ background: T.accent, color: "white" }}
+          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold hover:opacity-90 transition">
+          <Settings size={15} /> Agregar categorías
+        </button>
+      </div>
+    );
+  }
+
   return (
     <>
       <section className={`grid ${gridCols} gap-3 sm:gap-4 mb-8`}>
-        <SummaryCard label="Ingreso" value={fmt(totalIncomeCRC)} subtitle={incomeSubtitle} tone="ink" />
+        <SummaryCard label="Ingreso mensual" value={fmt(totalIncomeCRC)} subtitle={incomeSubtitle} tone="ink" />
         <SummaryCard
-          label="Gastos del mes" value={fmt(totals.total)}
+          label={`Gastos del ${freqLabel}`} value={fmt(totals.total)}
           subtitle={`${totalIncomeCRC > 0 ? Math.round(totals.total / totalIncomeCRC * 100) : 0}% del ingreso`}
           tone="bad" />
         <SummaryCard

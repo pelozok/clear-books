@@ -120,7 +120,7 @@ export default function App({ user, onSignOut }) {
     return <Onboarding onDone={async (cfg) => { await saveConfig(cfg); setShowOnboarding(false); }} />;
   }
 
-  const categories = config.categories?.length ? config.categories : DEFAULT_CATEGORIES;
+  const categories = config.categories || [];
 
   return (
     <div style={{ background: T.bg, color: T.ink, ...fontBody }} className="min-h-screen">
@@ -148,6 +148,7 @@ export default function App({ user, onSignOut }) {
             onAdd={(exp) => saveExpenses([exp, ...expenses])}
             onDelete={(id) => saveExpenses(expenses.filter(e => e.id !== id))}
             onExport={exportExcel}
+            onOpenSettings={() => setPage("settings")}
           />
         </div>
       )}
@@ -164,12 +165,15 @@ function availableMonths(expenses, currentKey) {
 }
 
 function Onboarding({ onDone }) {
+  const [payFrequency,      setPayFrequency]      = useState("mensual");
   const [incomeUSD,         setIncomeUSD]         = useState("");
   const [incomeCRC,         setIncomeCRC]         = useState("");
   const [savingsBalanceUSD, setSavingsBalanceUSD]  = useState("");
   const [savingsRate,       setSavingsRate]       = useState(20);
   const [exchangeRate,      setExchangeRate]      = useState("");
   const [fetchingRate,      setFetchingRate]      = useState(true);
+
+  const freqLabel = payFrequency === "quincenal" ? "por quincena" : "mensual";
 
   useEffect(() => {
     fetchExchangeRate()
@@ -201,7 +205,28 @@ function Onboarding({ onDone }) {
           </p>
         </div>
         <div className="space-y-5">
-          <Field label="Ingreso mensual en dólares" hint="Dejá en 0 si no tenés ingreso en USD">
+          <Field label="Frecuencia de pago">
+            <div className="flex gap-2">
+              {[["mensual", "Mensual"], ["quincenal", "Quincenal"]].map(([val, lbl]) => (
+                <button key={val} onClick={() => setPayFrequency(val)}
+                  style={{
+                    background: payFrequency === val ? T.accent : "white",
+                    color: payFrequency === val ? "white" : T.ink2,
+                    borderColor: payFrequency === val ? T.accent : T.line,
+                  }}
+                  className="flex-1 py-3 border rounded-xl text-sm font-semibold transition">
+                  {lbl}
+                </button>
+              ))}
+            </div>
+            {payFrequency === "quincenal" && (
+              <div style={{ color: T.muted }} className="text-xs mt-2">
+                Ingresá lo que recibís cada quincena — calculamos el total mensual automáticamente (×2).
+              </div>
+            )}
+          </Field>
+
+          <Field label={`Ingreso ${freqLabel} en dólares`} hint="Dejá en 0 si no tenés ingreso en USD">
             <div className="flex items-center gap-2">
               <span style={{ ...fontMono, color: T.muted }} className="text-lg w-5">$</span>
               <input type="number" value={incomeUSD} onChange={e => setIncomeUSD(e.target.value)}
@@ -210,7 +235,7 @@ function Onboarding({ onDone }) {
                 className="flex-1 px-4 py-3 border rounded-xl text-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400 transition" />
             </div>
           </Field>
-          <Field label="Ingreso mensual en colones" hint="Dejá en 0 si no tenés ingreso en CRC">
+          <Field label={`Ingreso ${freqLabel} en colones`} hint="Dejá en 0 si no tenés ingreso en CRC">
             <div className="flex items-center gap-2">
               <span style={{ ...fontMono, color: T.muted }} className="text-lg w-5">₡</span>
               <input type="number" value={incomeCRC} onChange={e => setIncomeCRC(e.target.value)}
@@ -259,6 +284,7 @@ function Onboarding({ onDone }) {
           <button
             disabled={!valid}
             onClick={() => onDone({
+              payFrequency,
               incomeUSD: parseFloat(incomeUSD) || 0, incomeCRC: parseFloat(incomeCRC) || 0,
               savingsBalanceUSD: parseFloat(savingsBalanceUSD) || 0, savingsRate,
               exchangeRate: parseFloat(exchangeRate) || 515,

@@ -20,6 +20,7 @@ export function SettingsPage({ config, categories, expenses, currentMonth, onSav
     Object.fromEntries(categories.map(c => [c.id, config.budgets?.[c.id]?.toString() ?? ""]))
   );
   const [localCategories,    setLocalCategories]    = useState(categories);
+  const [payFrequency,       setPayFrequency]       = useState(config.payFrequency || "mensual");
   const [confirmClear,       setConfirmClear]       = useState(false);
   const [importError,        setImportError]        = useState(null);
   const [activeSection,      setActiveSection]      = useState("ingresos");
@@ -88,6 +89,7 @@ export function SettingsPage({ config, categories, expenses, currentMonth, onSav
 
     onSave({
       ...config,
+      payFrequency,
       savingsBalanceUSD: savingsBalanceUSD !== "" ? parseFloat(savingsBalanceUSD) : config.savingsBalanceUSD,
       savingsRate,
       exchangeRate: parseFloat(exchangeRate) || 515,
@@ -142,17 +144,37 @@ export function SettingsPage({ config, categories, expenses, currentMonth, onSav
 
           <main className="flex-1 space-y-6 min-w-0">
             <SettingsSection id="ingresos" title="Ingresos" subtitle={`Ingreso de ${monthLabel(currentMonth)} · cada mes puede tener su propio valor`}>
+              <Field label="Frecuencia de pago">
+                <div className="flex gap-2">
+                  {[["mensual", "Mensual"], ["quincenal", "Quincenal"]].map(([val, lbl]) => (
+                    <button key={val} onClick={() => setPayFrequency(val)}
+                      style={{
+                        background: payFrequency === val ? T.accent : "white",
+                        color: payFrequency === val ? "white" : T.ink2,
+                        borderColor: payFrequency === val ? T.accent : T.line,
+                      }}
+                      className="flex-1 py-2.5 border rounded-xl text-sm font-semibold transition">
+                      {lbl}
+                    </button>
+                  ))}
+                </div>
+                {payFrequency === "quincenal" && (
+                  <div style={{ color: T.muted }} className="text-xs mt-2">
+                    Ingresá lo que recibís cada quincena — el total mensual se calcula automáticamente (×2).
+                  </div>
+                )}
+              </Field>
               <div className="space-y-3">
                 <div className="flex items-center gap-3">
                   <span style={{ ...fontMono, color: T.muted }} className="text-sm w-5 shrink-0">$</span>
-                  <input type="number" value={incomeUSD} onChange={e => setIncomeUSD(e.target.value)} placeholder="0"
-                    style={{ background: T.bg, borderColor: T.line, color: T.ink, ...fontMono }} className={inputCls} />
+                  <input type="number" value={incomeUSD} onChange={e => setIncomeUSD(e.target.value)}
+                    placeholder="0" style={{ background: T.bg, borderColor: T.line, color: T.ink, ...fontMono }} className={inputCls} />
                   <span style={{ color: T.muted }} className="text-xs w-8 shrink-0">USD</span>
                 </div>
                 <div className="flex items-center gap-3">
                   <span style={{ ...fontMono, color: T.muted }} className="text-sm w-5 shrink-0">₡</span>
-                  <input type="number" value={incomeCRC} onChange={e => setIncomeCRC(e.target.value)} placeholder="0"
-                    style={{ background: T.bg, borderColor: T.line, color: T.ink, ...fontMono }} className={inputCls} />
+                  <input type="number" value={incomeCRC} onChange={e => setIncomeCRC(e.target.value)}
+                    placeholder="0" style={{ background: T.bg, borderColor: T.line, color: T.ink, ...fontMono }} className={inputCls} />
                   <span style={{ color: T.muted }} className="text-xs w-8 shrink-0">CRC</span>
                 </div>
               </div>
