@@ -1,5 +1,4 @@
 import { useState, useEffect, useRef } from "react";
-import { RefreshCw } from "lucide-react";
 import { storage } from "./storage.js";
 import * as XLSX from "xlsx";
 import { T, FONTS, fontSans, fontBody, fontMono, DEFAULT_CATEGORIES } from "./lib/constants.js";
@@ -165,31 +164,19 @@ function availableMonths(expenses, currentKey) {
 }
 
 function Onboarding({ onDone }) {
-  const [payFrequency,      setPayFrequency]      = useState("mensual");
-  const [incomeUSD,         setIncomeUSD]         = useState("");
-  const [incomeCRC,         setIncomeCRC]         = useState("");
-  const [savingsBalanceUSD, setSavingsBalanceUSD]  = useState("");
-  const [savingsRate,       setSavingsRate]       = useState(20);
-  const [exchangeRate,      setExchangeRate]      = useState("");
-  const [fetchingRate,      setFetchingRate]      = useState(true);
-
-  const freqLabel = payFrequency === "quincenal" ? "por quincena" : "mensual";
+  const [payFrequency, setPayFrequency] = useState("mensual");
+  const [incomeUSD,    setIncomeUSD]    = useState("");
+  const [incomeCRC,    setIncomeCRC]    = useState("");
+  const [savingsRate,  setSavingsRate]  = useState(20);
+  const [fetchedRate,  setFetchedRate]  = useState(515);
 
   useEffect(() => {
-    fetchExchangeRate()
-      .then(r => setExchangeRate(r.toString()))
-      .catch(() => setExchangeRate("515"))
-      .finally(() => setFetchingRate(false));
+    fetchExchangeRate().then(r => setFetchedRate(r)).catch(() => {});
   }, []);
 
-  const refresh = async () => {
-    setFetchingRate(true);
-    try { const r = await fetchExchangeRate(); setExchangeRate(r.toString()); }
-    catch { /* keep current */ }
-    finally { setFetchingRate(false); }
-  };
-
-  const valid = (parseFloat(incomeUSD) > 0 || parseFloat(incomeCRC) > 0) && parseFloat(exchangeRate) > 0;
+  const isQ     = payFrequency === "quincenal";
+  const freqLabel = isQ ? "por quincena" : "mensual";
+  const valid   = parseFloat(incomeUSD) > 0 || parseFloat(incomeCRC) > 0;
 
   return (
     <div style={{ background: T.bg, color: T.ink, ...fontBody }} className="min-h-screen flex items-center justify-center px-5 py-10">
@@ -204,27 +191,37 @@ function Onboarding({ onDone }) {
             Todos los datos se guardan en la nube, asociados a tu cuenta.
           </p>
         </div>
-        <div className="space-y-5">
-          <Field label="Frecuencia de pago">
-            <div className="flex gap-2">
-              {[["mensual", "Mensual"], ["quincenal", "Quincenal"]].map(([val, lbl]) => (
+
+        <div className="space-y-6">
+          {/* Frecuencia de pago — prominente */}
+          <div>
+            <label style={{ color: T.ink, ...fontSans, fontWeight: 700 }} className="block text-sm mb-3">
+              ¿Cómo recibís tu salario?
+            </label>
+            <div className="grid grid-cols-2 gap-3">
+              {[
+                { val: "mensual",   lbl: "Mensual",    desc: "Una vez al mes" },
+                { val: "quincenal", lbl: "Quincenal",  desc: "Dos veces al mes" },
+              ].map(({ val, lbl, desc }) => (
                 <button key={val} onClick={() => setPayFrequency(val)}
                   style={{
                     background: payFrequency === val ? T.accent : "white",
-                    color: payFrequency === val ? "white" : T.ink2,
+                    color: payFrequency === val ? "white" : T.ink,
                     borderColor: payFrequency === val ? T.accent : T.line,
+                    borderWidth: 2,
                   }}
-                  className="flex-1 py-3 border rounded-xl text-sm font-semibold transition">
-                  {lbl}
+                  className="flex flex-col items-start px-4 py-4 border rounded-xl transition text-left">
+                  <span className="font-bold text-sm">{lbl}</span>
+                  <span style={{ color: payFrequency === val ? "rgba(255,255,255,0.75)" : T.muted }} className="text-xs mt-0.5">{desc}</span>
                 </button>
               ))}
             </div>
-            {payFrequency === "quincenal" && (
-              <div style={{ color: T.muted }} className="text-xs mt-2">
-                Ingresá lo que recibís cada quincena — calculamos el total mensual automáticamente (×2).
+            {isQ && (
+              <div style={{ color: T.muted }} className="text-xs mt-2 px-1">
+                Ingresá lo que recibís cada quincena — toda la plataforma funcionará en quincenas.
               </div>
             )}
-          </Field>
+          </div>
 
           <Field label={`Ingreso ${freqLabel} en dólares`} hint="Dejá en 0 si no tenés ingreso en USD">
             <div className="flex items-center gap-2">
@@ -235,6 +232,7 @@ function Onboarding({ onDone }) {
                 className="flex-1 px-4 py-3 border rounded-xl text-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400 transition" />
             </div>
           </Field>
+
           <Field label={`Ingreso ${freqLabel} en colones`} hint="Dejá en 0 si no tenés ingreso en CRC">
             <div className="flex items-center gap-2">
               <span style={{ ...fontMono, color: T.muted }} className="text-lg w-5">₡</span>
@@ -244,34 +242,8 @@ function Onboarding({ onDone }) {
                 className="flex-1 px-4 py-3 border rounded-xl text-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400 transition" />
             </div>
           </Field>
-          <Field label="Saldo cuenta USD" hint="Lo que tenés ahorrado ahora">
-            <div className="flex items-center gap-2">
-              <span style={{ ...fontMono, color: T.muted }} className="text-lg w-5">$</span>
-              <input type="number" value={savingsBalanceUSD} onChange={e => setSavingsBalanceUSD(e.target.value)}
-                placeholder="0"
-                style={{ background: "white", borderColor: T.line, color: T.ink, ...fontMono }}
-                className="flex-1 px-4 py-3 border rounded-xl text-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400 transition" />
-            </div>
-          </Field>
-          <Field label="Tipo de cambio" hint="Colones por dólar">
-            <div className="flex gap-2">
-              <div className="flex-1 flex items-center gap-2">
-                <span style={{ ...fontMono, color: T.muted }} className="text-sm">₡</span>
-                <input type="number" value={exchangeRate} onChange={e => setExchangeRate(e.target.value)}
-                  placeholder="515" disabled={fetchingRate}
-                  style={{ background: "white", borderColor: T.line, color: T.ink, ...fontMono }}
-                  className="flex-1 px-4 py-3 border rounded-xl text-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400 transition" />
-                <span style={{ color: T.muted }} className="text-xs whitespace-nowrap">por USD</span>
-              </div>
-              <button onClick={refresh} disabled={fetchingRate}
-                style={{ borderColor: T.line, color: T.ink2, background: "white" }}
-                className="px-4 py-3 border rounded-xl text-sm flex items-center gap-2 hover:bg-slate-50 transition disabled:opacity-40">
-                <RefreshCw size={14} className={fetchingRate ? "animate-spin" : ""} />
-                {fetchingRate ? "…" : "Actualizar"}
-              </button>
-            </div>
-          </Field>
-          <Field label="Meta de ahorro" hint="% del ingreso total que querés ahorrar cada mes">
+
+          <Field label="Meta de ahorro" hint={`% del ingreso ${freqLabel} que querés ahorrar`}>
             <div className="flex items-center gap-4">
               <input type="range" min="0" max="50" step="5" value={savingsRate}
                 onChange={e => setSavingsRate(+e.target.value)} className="flex-1" style={{ accentColor: T.accent }} />
@@ -281,19 +253,26 @@ function Onboarding({ onDone }) {
               Recomendado: 20% (regla 50/30/20). Si recién empezás, 10% ya es excelente.
             </div>
           </Field>
+
           <button
             disabled={!valid}
             onClick={() => onDone({
               payFrequency,
-              incomeUSD: parseFloat(incomeUSD) || 0, incomeCRC: parseFloat(incomeCRC) || 0,
-              savingsBalanceUSD: parseFloat(savingsBalanceUSD) || 0, savingsRate,
-              exchangeRate: parseFloat(exchangeRate) || 515,
-              exchangeRateUpdatedAt: new Date().toISOString(), createdAt: new Date().toISOString(),
+              incomeUSD: parseFloat(incomeUSD) || 0,
+              incomeCRC: parseFloat(incomeCRC) || 0,
+              savingsRate,
+              exchangeRate: fetchedRate,
+              exchangeRateUpdatedAt: new Date().toISOString(),
+              createdAt: new Date().toISOString(),
             })}
             style={{ background: valid ? T.accent : T.line, color: valid ? "white" : T.muted, cursor: valid ? "pointer" : "not-allowed" }}
             className="w-full py-4 rounded-xl text-sm tracking-[0.15em] uppercase font-semibold transition hover:opacity-90">
             Comenzar
           </button>
+
+          <p style={{ color: T.muted }} className="text-xs text-center">
+            Podés configurar el tipo de cambio y el saldo de ahorro en Ajustes cuando quieras.
+          </p>
         </div>
       </div>
     </div>
