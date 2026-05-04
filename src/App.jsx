@@ -164,7 +164,6 @@ function availableMonths(expenses, currentKey) {
   const set = new Set(expenses.map(e => monthKey(e.date)));
   set.add(currentKey);
   set.add(monthKey(todayISO()));
-  set.add(nextMonthKey());
   return Array.from(set).sort().reverse();
 }
 
