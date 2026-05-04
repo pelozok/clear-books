@@ -102,6 +102,23 @@ export function Dashboard({ config, expenses, currentMonth, currentHalf, categor
 
   return (
     <>
+      {/* Banner: ingreso no configurado */}
+      {totalIncomeCRC === 0 && (
+        <div style={{ background: "#fffbeb", borderColor: "#fde68a" }}
+          className="border-2 rounded-2xl p-4 mb-4 flex items-center justify-between gap-3">
+          <div>
+            <div style={{ color: T.warn, fontWeight: 700 }} className="text-sm">Sin ingreso configurado</div>
+            <div style={{ color: T.ink2 }} className="text-xs mt-0.5">
+              Ingresá tu salario para ver presupuestos y métricas reales.
+            </div>
+          </div>
+          <button onClick={onOpenSettings} style={{ background: T.warn, color: "white" }}
+            className="px-3 py-2 rounded-xl text-xs font-semibold shrink-0 hover:opacity-90 active:opacity-80 transition">
+            Configurar
+          </button>
+        </div>
+      )}
+
       {/* Hero — disponible */}
       <div style={{ background: heroTone.bg, borderColor: heroTone.border }}
         className="border-2 rounded-2xl p-5 sm:p-7 mb-4">

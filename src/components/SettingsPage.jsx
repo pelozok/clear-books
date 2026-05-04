@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { ArrowLeft, ChevronDown, RefreshCw, Download, Upload, X } from "lucide-react";
 import { T, fontSans, fontBody, fontMono, DEFAULT_BUDGET_PCTS } from "../lib/constants.js";
-import { fetchExchangeRate, fmt, fmtUSD, monthLabel, todayISO } from "../lib/helpers.js";
+import { fetchExchangeRate, fmt, fmtUSD, monthLabel, monthKey, todayISO } from "../lib/helpers.js";
 import { Field, SettingsSection } from "./ui.jsx";
 import { CategoryEditor } from "./settings/CategoryEditor.jsx";
 
@@ -21,9 +21,11 @@ export function SettingsPage({ config, categories, expenses, currentMonth, onSav
   );
   const [localCategories,    setLocalCategories]    = useState(categories);
   const [payFrequency,       setPayFrequency]       = useState(config.payFrequency || "mensual");
-  const [confirmClear,       setConfirmClear]       = useState(false);
-  const [importError,        setImportError]        = useState(null);
-  const [activeSection,      setActiveSection]      = useState("ingresos");
+  const [confirmClear,         setConfirmClear]         = useState(false);
+  const [importError,          setImportError]          = useState(null);
+  const [activeSection,        setActiveSection]        = useState("ingresos");
+  const [deletedReassignments, setDeletedReassignments] = useState({});
+  const isPastMonth = currentMonth < monthKey(todayISO());
   const fileRef = useRef(null);
 
   const navSections = [
@@ -82,9 +84,12 @@ export function SettingsPage({ config, categories, expenses, currentMonth, onSav
     const deletedIds  = categories.map(c => c.id).filter(id => !currentIds.has(id));
     let updatedExpenses = null;
     if (deletedIds.length > 0) {
-      const fallbackId   = localCategories[localCategories.length - 1]?.id;
       const needsUpdate  = expenses.some(e => deletedIds.includes(e.category));
-      if (needsUpdate) updatedExpenses = expenses.map(e => deletedIds.includes(e.category) ? { ...e, category: fallbackId } : e);
+      if (needsUpdate) updatedExpenses = expenses.map(e =>
+        deletedIds.includes(e.category)
+          ? { ...e, category: deletedReassignments[e.category] ?? localCategories.at(-1)?.id }
+          : e
+      );
     }
 
     onSave({
@@ -162,9 +167,16 @@ export function SettingsPage({ config, categories, expenses, currentMonth, onSav
           </aside>
 
           <main className="flex-1 space-y-6 min-w-0">
-            <SettingsSection id="ingresos" title="Ingresos" subtitle={`Ingreso de ${monthLabel(currentMonth)} · cada mes puede tener su propio valor`}>
-              <Field label="Frecuencia de pago">
-                <div className="flex gap-2">
+            <SettingsSection id="ingresos" title={`Ingresos · ${monthLabel(currentMonth)}`}
+              subtitle="Cada mes puede tener su propio ingreso">
+              {isPastMonth && (
+                <div style={{ background: "#fffbeb", borderColor: "#fde68a", color: T.warn }}
+                  className="border rounded-xl px-3 py-2.5 text-xs font-semibold flex items-center gap-2">
+                  ⚠ Estás editando el ingreso de un mes pasado
+                </div>
+              )}
+              <Field label="Frecuencia de cobro" hint="Afecta períodos, presupuestos y comparaciones en toda la plataforma">
+                <div className="flex gap-2 mt-1">
                   {[["mensual", "Mensual"], ["quincenal", "Quincenal"]].map(([val, lbl]) => (
                     <button key={val} onClick={() => setPayFrequency(val)}
                       style={{
@@ -172,16 +184,11 @@ export function SettingsPage({ config, categories, expenses, currentMonth, onSav
                         color: payFrequency === val ? "white" : T.ink2,
                         borderColor: payFrequency === val ? T.accent : T.line,
                       }}
-                      className="flex-1 py-2.5 border rounded-xl text-sm font-semibold transition">
+                      className="flex-1 py-3 border-2 rounded-xl text-sm font-bold transition">
                       {lbl}
                     </button>
                   ))}
                 </div>
-                {payFrequency === "quincenal" && (
-                  <div style={{ color: T.muted }} className="text-xs mt-2">
-                    Ingresá lo que recibís cada quincena — el total mensual se calcula automáticamente (×2).
-                  </div>
-                )}
               </Field>
               <div className="space-y-3">
                 <div className="flex items-center gap-3">
@@ -280,7 +287,8 @@ export function SettingsPage({ config, categories, expenses, currentMonth, onSav
                 setLocalCategories={setLocalCategories}
                 setCustomBudgets={setCustomBudgets}
                 config={config}
-                expenses={expenses} />
+                expenses={expenses}
+                onReassign={(id, targetId) => setDeletedReassignments(p => ({ ...p, [id]: targetId }))} />
             </SettingsSection>
 
             <SettingsSection id="presupuesto" title="Presupuesto por categoría"

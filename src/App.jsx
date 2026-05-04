@@ -1,8 +1,8 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { storage } from "./storage.js";
 import * as XLSX from "xlsx";
 import { T, FONTS, fontSans, fontBody, fontMono, DEFAULT_CATEGORIES } from "./lib/constants.js";
-import { fetchExchangeRate, toCRC, fmt, fmtUSD, getCat, getBudgets, todayISO, monthKey, monthLabel, nextMonthKey, todayHalf } from "./lib/helpers.js";
+import { fetchExchangeRate, toCRC, fmt, fmtUSD, getCat, getBudgets, todayISO, monthKey, monthLabel, todayHalf } from "./lib/helpers.js";
 import { Field } from "./components/ui.jsx";
 import { Header } from "./components/Header.jsx";
 import { Dashboard } from "./components/Dashboard.jsx";
@@ -16,6 +16,12 @@ export default function App({ user, onSignOut }) {
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [currentMonth,   setCurrentMonth]   = useState(monthKey(todayISO()));
   const [currentHalf,    setCurrentHalf]    = useState(todayHalf());
+  const [toast,          setToast]          = useState(null);
+
+  const showToast = (msg) => {
+    setToast(msg);
+    setTimeout(() => setToast(null), 2500);
+  };
 
   useEffect(() => {
     (async () => {
@@ -42,8 +48,24 @@ export default function App({ user, onSignOut }) {
           exps = r ? JSON.parse(r.value) : [];
         } catch { exps = []; }
 
-        if (!cfg) setShowOnboarding(true);
-        else setConfig(cfg);
+        if (!cfg) {
+          setShowOnboarding(true);
+        } else {
+          setConfig(cfg);
+          // Auto-refresh type de cambio si tiene más de 24h
+          const ageH = cfg.exchangeRateUpdatedAt
+            ? (Date.now() - new Date(cfg.exchangeRateUpdatedAt).getTime()) / 3600000
+            : Infinity;
+          if (ageH > 24) {
+            fetchExchangeRate()
+              .then(r => {
+                const updated = { ...cfg, exchangeRate: r, exchangeRateUpdatedAt: new Date().toISOString() };
+                setConfig(updated);
+                storage.set("finance:config", JSON.stringify(updated)).catch(() => {});
+              })
+              .catch(() => {});
+          }
+        }
         setExpenses(exps);
       } finally {
         setLoading(false);
@@ -128,7 +150,12 @@ export default function App({ user, onSignOut }) {
       {page === "settings" ? (
         <SettingsPage
           config={config} categories={categories} expenses={expenses} currentMonth={currentMonth}
-          onSave={async (c, newExpenses) => { await saveConfig(c); if (newExpenses) await saveExpenses(newExpenses); setPage("dashboard"); }}
+          onSave={async (c, newExpenses) => {
+            await saveConfig(c);
+            if (newExpenses) await saveExpenses(newExpenses);
+            setPage("dashboard");
+            showToast("Cambios guardados");
+          }}
           onBack={() => setPage("dashboard")}
           onClearAll={async () => { await saveExpenses([]); setPage("dashboard"); }}
           onImport={async (cfg, exps) => { if (cfg) await saveConfig(cfg); if (exps) await saveExpenses(exps); setPage("dashboard"); }}
@@ -156,6 +183,12 @@ export default function App({ user, onSignOut }) {
           />
         </div>
       )}
+      {toast && (
+        <div style={{ background: T.ink, color: "white" }}
+          className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50 px-5 py-3 rounded-2xl shadow-xl text-sm font-semibold pointer-events-none select-none">
+          ✓ {toast}
+        </div>
+      )}
     </div>
   );
 }
@@ -178,9 +211,9 @@ function Onboarding({ onDone }) {
     fetchExchangeRate().then(r => setFetchedRate(r)).catch(() => {});
   }, []);
 
-  const isQ     = payFrequency === "quincenal";
+  const isQ       = payFrequency === "quincenal";
   const freqLabel = isQ ? "por quincena" : "mensual";
-  const valid   = parseFloat(incomeUSD) > 0 || parseFloat(incomeCRC) > 0;
+  const valid     = parseFloat(incomeUSD) > 0 || parseFloat(incomeCRC) > 0;
 
   return (
     <div style={{ background: T.bg, color: T.ink, ...fontBody }} className="min-h-screen flex items-center justify-center px-5 py-10">
@@ -197,15 +230,14 @@ function Onboarding({ onDone }) {
         </div>
 
         <div className="space-y-6">
-          {/* Frecuencia de pago — prominente */}
           <div>
             <label style={{ color: T.ink, ...fontSans, fontWeight: 700 }} className="block text-sm mb-3">
               ¿Cómo recibís tu salario?
             </label>
             <div className="grid grid-cols-2 gap-3">
               {[
-                { val: "mensual",   lbl: "Mensual",    desc: "Una vez al mes" },
-                { val: "quincenal", lbl: "Quincenal",  desc: "Dos veces al mes" },
+                { val: "mensual",   lbl: "Mensual",   desc: "Una vez al mes" },
+                { val: "quincenal", lbl: "Quincenal", desc: "Dos veces al mes" },
               ].map(({ val, lbl, desc }) => (
                 <button key={val} onClick={() => setPayFrequency(val)}
                   style={{
