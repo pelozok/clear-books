@@ -122,6 +122,24 @@ export function SettingsPage({ config, categories, expenses, currentMonth, onSav
         </div>
       </header>
 
+      {/* Mobile section nav — horizontal scroll tabs */}
+      <div className="md:hidden sticky top-14 z-20 border-b overflow-x-auto"
+        style={{ background: "white", borderColor: T.line }}>
+        <div className="flex gap-1.5 px-4 py-2.5" style={{ minWidth: "max-content" }}>
+          {navSections.map(s => (
+            <a key={s.id} href={`#${s.id}`} onClick={() => setActiveSection(s.id)}
+              className="px-3.5 py-1.5 rounded-full text-xs font-semibold transition whitespace-nowrap"
+              style={{
+                background: activeSection === s.id ? T.accent : T.bg2,
+                color: activeSection === s.id ? "white" : T.ink2,
+                textDecoration: "none",
+              }}>
+              {s.label}
+            </a>
+          ))}
+        </div>
+      </div>
+
       <div className="max-w-5xl mx-auto px-4 sm:px-8 py-8 pb-16">
         <div className="flex gap-10 items-start">
           <aside className="hidden md:block w-44 shrink-0 sticky top-20 self-start">

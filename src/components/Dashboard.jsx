@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { Plus, Download, Settings } from "lucide-react";
-import { T, fontBody, DEFAULT_BUDGET_PCTS } from "../lib/constants.js";
+import { T, fontBody, fontMono, DEFAULT_BUDGET_PCTS } from "../lib/constants.js";
 import { toCRC, fmt, fmtUSD, monthKey, getCat, isFirstQ, quincenaLabel, prevQuincena } from "../lib/helpers.js";
 import { SummaryCard, SavingsAlertBanner, SavingsBar, Card, CardTitle, EmptyState } from "./ui.jsx";
 import { BudgetSection } from "./BudgetSection.jsx";
@@ -15,12 +15,12 @@ export function Dashboard({ config, expenses, currentMonth, currentHalf, categor
   const rate = config.exchangeRate || 515;
   const isQ  = config.payFrequency === "quincenal";
 
-  const monthIncome     = config.incomeByMonth?.[currentMonth];
-  const incomeUSD       = monthIncome !== undefined ? monthIncome.incomeUSD : (config.incomeUSD || 0);
-  const incomeCRC       = monthIncome !== undefined ? monthIncome.incomeCRC : (config.incomeCRC || 0);
-  const totalIncomeCRC  = incomeCRC + incomeUSD * rate; // always per-period (quincena or mes)
-  const hasSavingsCard  = config.savingsBalanceUSD != null && config.savingsBalanceUSD > 0;
-  const hasSavingsGoal  = config.savingsRate > 0;
+  const monthIncome    = config.incomeByMonth?.[currentMonth];
+  const incomeUSD      = monthIncome !== undefined ? monthIncome.incomeUSD : (config.incomeUSD || 0);
+  const incomeCRC      = monthIncome !== undefined ? monthIncome.incomeCRC : (config.incomeCRC || 0);
+  const totalIncomeCRC = incomeCRC + incomeUSD * rate;
+  const hasSavingsCard = config.savingsBalanceUSD != null && config.savingsBalanceUSD > 0;
+  const hasSavingsGoal = config.savingsRate > 0;
 
   const incomeSubtitle = (() => {
     if (incomeUSD > 0 && incomeCRC > 0) return `${fmtUSD(incomeUSD)} + ${fmt(incomeCRC)}`;
@@ -28,7 +28,6 @@ export function Dashboard({ config, expenses, currentMonth, currentHalf, categor
     return null;
   })();
 
-  // Filter expenses to the current period (quincena or full month)
   const periodExpenses = useMemo(() => {
     return expenses.filter(e => {
       if (monthKey(e.date) !== currentMonth) return false;
@@ -37,7 +36,6 @@ export function Dashboard({ config, expenses, currentMonth, currentHalf, categor
     });
   }, [expenses, currentMonth, currentHalf, isQ]);
 
-  // Previous period expenses for comparison
   const prevPeriodExpenses = useMemo(() => {
     if (isQ) {
       const { month: pm, half: ph } = prevQuincena(currentMonth, currentHalf);
@@ -63,7 +61,6 @@ export function Dashboard({ config, expenses, currentMonth, currentHalf, categor
     return { total, byCat, byType };
   }, [periodExpenses, rate, categories]);
 
-  // Budgets are always per-period (no ×2 needed since expenses are also per-period now)
   const budgets = Object.fromEntries(
     categories.map(c => [
       c.id,
@@ -76,56 +73,68 @@ export function Dashboard({ config, expenses, currentMonth, currentHalf, categor
   const savingsGoal = totalIncomeCRC * (config.savingsRate / 100);
   const remaining   = totalIncomeCRC - totals.total;
   const disponible  = totalIncomeCRC - savingsGoal - totals.total;
-
   const periodLabel = isQ ? quincenaLabel(currentMonth, currentHalf) : null;
-
-  const gridCols = hasSavingsCard
-    ? "grid-cols-2 sm:grid-cols-3 lg:grid-cols-5"
-    : "grid-cols-2 lg:grid-cols-4";
+  const spentPct    = totalIncomeCRC > 0 ? Math.round(totals.total / totalIncomeCRC * 100) : 0;
 
   if (categories.length === 0) {
     return (
-      <div style={{ borderColor: T.line, background: "white" }} className="border-2 border-dashed rounded-lg p-10 text-center mt-4">
-        <div style={{ background: T.accentSoft, color: T.accent }} className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4">
-          <Settings size={26} />
+      <div style={{ borderColor: T.line, background: "white" }}
+        className="border-2 border-dashed rounded-2xl p-10 text-center mt-4">
+        <div style={{ background: T.accentSoft, color: T.accent }}
+          className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-5">
+          <Settings size={28} />
         </div>
         <h3 style={{ color: T.ink, fontWeight: 700 }} className="text-xl font-bold mb-2">Sin categorías aún</h3>
         <p style={{ color: T.muted }} className="text-sm mb-6 max-w-sm mx-auto leading-relaxed">
-          Agregá tus categorías de gastos para empezar a registrar movimientos y ver tu dashboard completo.
+          Agregá tus categorías de gastos para empezar a registrar movimientos y ver el dashboard completo.
         </p>
         <button onClick={onOpenSettings} style={{ background: T.accent, color: "white" }}
-          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold hover:opacity-90 transition">
+          className="inline-flex items-center gap-2 px-5 py-3 rounded-xl text-sm font-semibold hover:opacity-90 active:opacity-80 transition">
           <Settings size={15} /> Agregar categorías
         </button>
       </div>
     );
   }
 
+  const heroTone = disponible < 0
+    ? { bg: "#fef2f2", border: "#fecaca", color: T.bad }
+    : { bg: "#f0fdf4", border: "#bbf7d0", color: T.good };
+
   return (
     <>
-      <section className={`grid ${gridCols} gap-3 sm:gap-4 mb-8`}>
+      {/* Hero — disponible */}
+      <div style={{ background: heroTone.bg, borderColor: heroTone.border }}
+        className="border-2 rounded-2xl p-5 sm:p-7 mb-4">
+        <div style={{ color: T.muted }} className="text-[10px] font-bold tracking-[0.18em] uppercase mb-2">
+          {hasSavingsGoal ? "Disponible · apartado el ahorro" : "Disponible este período"}
+        </div>
+        <div style={{ ...fontMono, color: heroTone.color }}
+          className="text-4xl sm:text-5xl font-bold tabular-nums leading-none">
+          {fmt(disponible)}
+        </div>
+        {disponible < 0 ? (
+          <div style={{ color: T.bad }} className="text-sm mt-3 font-medium">
+            Estás usando más de lo que ingresás este período
+          </div>
+        ) : hasSavingsGoal ? (
+          <div style={{ color: T.good }} className="text-sm mt-3">
+            Meta de ahorro: {fmt(savingsGoal)} ({config.savingsRate}%)
+          </div>
+        ) : null}
+      </div>
+
+      {/* Supporting cards */}
+      <section className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-8">
         <SummaryCard label="Ingreso" value={fmt(totalIncomeCRC)} subtitle={incomeSubtitle} tone="ink" />
-        <SummaryCard
-          label="Gastos del período" value={fmt(totals.total)}
-          subtitle={`${totalIncomeCRC > 0 ? Math.round(totals.total / totalIncomeCRC * 100) : 0}% del ingreso`}
-          tone="bad" />
-        <SummaryCard
-          label="Disponible"
-          value={fmt(disponible)}
-          subtitle={disponible < 0 ? "Estás usando tus ahorros" : hasSavingsGoal ? "Después de apartar el ahorro" : null}
-          tone={disponible < 0 ? "bad" : "good"} />
+        <SummaryCard label="Gastos" value={fmt(totals.total)}
+          subtitle={`${spentPct}% del ingreso`} tone={spentPct > 90 ? "bad" : "ink"} />
         {hasSavingsGoal && (
-          <SummaryCard
-            label="Meta de ahorro" value={fmt(savingsGoal)}
-            subtitle={`${config.savingsRate}% del ingreso`}
-            tone="accent" />
+          <SummaryCard label="Meta ahorro" value={fmt(savingsGoal)}
+            subtitle={`${config.savingsRate}% del ingreso`} tone="accent" />
         )}
         {hasSavingsCard && (
-          <SummaryCard
-            label="Cuenta USD"
-            value={fmtUSD(config.savingsBalanceUSD)}
-            subtitle={`≈ ${fmt((config.savingsBalanceUSD || 0) * rate)}`}
-            tone="accent" />
+          <SummaryCard label="Cuenta USD" value={fmtUSD(config.savingsBalanceUSD)}
+            subtitle={`≈ ${fmt((config.savingsBalanceUSD || 0) * rate)}`} tone="accent" />
         )}
       </section>
 
@@ -136,14 +145,13 @@ export function Dashboard({ config, expenses, currentMonth, currentHalf, categor
         </>
       )}
 
-      <div className="my-8 flex items-center gap-3 flex-wrap">
-        <button onClick={() => setShowAdd(true)}
-          style={{ background: T.accent, color: "white" }}
+      {/* Desktop action bar */}
+      <div className="hidden sm:flex items-center gap-3 my-8 flex-wrap">
+        <button onClick={() => setShowAdd(true)} style={{ background: T.accent, color: "white" }}
           className="inline-flex items-center gap-2 px-5 py-3 rounded-xl text-sm tracking-wide font-semibold hover:opacity-90 transition shadow-sm">
           <Plus size={16} /> Agregar gasto
         </button>
-        <button onClick={onExport}
-          style={{ borderColor: T.line, color: T.ink2, background: "white" }}
+        <button onClick={onExport} style={{ borderColor: T.line, color: T.ink2, background: "white" }}
           className="inline-flex items-center gap-2 px-4 py-3 rounded-xl text-sm font-medium border hover:bg-slate-50 transition shadow-sm">
           <Download size={15} /> Exportar datos
         </button>
@@ -151,24 +159,22 @@ export function Dashboard({ config, expenses, currentMonth, currentHalf, categor
 
       <Suggestions
         income={totalIncomeCRC} totals={totals} config={config} expensesCount={periodExpenses.length}
-        categories={categories} budgets={budgets} prevPeriodExpenses={prevPeriodExpenses} rate={rate}
-      />
+        categories={categories} budgets={budgets} prevPeriodExpenses={prevPeriodExpenses} rate={rate} />
 
       <BudgetSection byCat={totals.byCat} budgets={budgets} categories={categories} />
 
       {periodExpenses.length > 0 ? (
-        <section className="grid grid-cols-1 lg:grid-cols-5 gap-4 mb-8">
-          <Card className="lg:col-span-2">
+        <section className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-8">
+          <Card className="md:col-span-2">
             <CardTitle>Por categoría</CardTitle>
             <CategoryChart byCat={totals.byCat} categories={categories} />
           </Card>
-          <Card className="lg:col-span-3">
+          <Card className="md:col-span-3">
             <CardTitle>{isQ ? "Esta quincena vs quincena anterior" : "Este mes vs mes anterior"}</CardTitle>
             <MonthComparisonChart
               currentExpenses={periodExpenses} prevExpenses={prevPeriodExpenses}
               categories={categories} rate={rate}
-              prevLabel={isQ ? quincenaLabel(...Object.values(prevQuincena(currentMonth, currentHalf))) : null}
-            />
+              prevLabel={isQ ? quincenaLabel(...Object.values(prevQuincena(currentMonth, currentHalf))) : null} />
           </Card>
         </section>
       ) : (
@@ -184,10 +190,17 @@ export function Dashboard({ config, expenses, currentMonth, currentHalf, categor
         </section>
       )}
 
+      {/* Mobile FAB */}
+      <button onClick={() => setShowAdd(true)}
+        style={{ background: T.accent, color: "white" }}
+        className="sm:hidden fixed bottom-6 right-5 z-40 flex items-center gap-2 pl-4 pr-5 py-3.5 rounded-2xl shadow-xl text-sm font-semibold active:opacity-80 transition">
+        <Plus size={18} /> Agregar
+      </button>
+      <div className="sm:hidden h-28" />
+
       {showAdd && (
         <AddExpenseModal
-          currentMonth={currentMonth}
-          currentHalf={isQ ? currentHalf : null}
+          currentMonth={currentMonth} currentHalf={isQ ? currentHalf : null}
           categories={categories}
           onAdd={(exp) => { onAdd(exp); setShowAdd(false); }}
           onClose={() => setShowAdd(false)} />

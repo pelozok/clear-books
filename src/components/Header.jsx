@@ -11,32 +11,37 @@ export function Header({ config, user, currentMonth, setCurrentMonth, currentHal
   useEffect(() => {
     const close = (e) => { if (!menuRef.current?.contains(e.target)) setMenuOpen(false); };
     document.addEventListener("mousedown", close);
-    return () => document.removeEventListener("mousedown", close);
+    document.addEventListener("touchstart", close, { passive: true });
+    return () => {
+      document.removeEventListener("mousedown", close);
+      document.removeEventListener("touchstart", close);
+    };
   }, []);
 
   const firstName = user?.displayName?.split(" ")[0] || "";
 
-  // Build quincena options: for each available month, two halves
   const quincenaOptions = months.flatMap(m => [
     { month: m, half: 1 },
     { month: m, half: 2 },
   ]);
 
   const handleQuincenaChange = (e) => {
-    const [y, m, h] = e.target.value.split("-");
-    setCurrentMonth(`${y}-${m}`);
+    const parts = e.target.value.split("-");
+    const h = parts.pop();
+    setCurrentMonth(parts.join("-"));
     setCurrentHalf(parseInt(h));
   };
 
   return (
-    <header className="flex items-start justify-between mb-10 sm:mb-14">
+    <header className="flex items-start justify-between mb-8 sm:mb-14">
       <div>
         {firstName && (
-          <div style={{ color: T.ink2 }} className="text-sm font-medium mb-2">
+          <div style={{ color: T.ink2 }} className="text-sm font-medium mb-1.5">
             Hola, {firstName}
           </div>
         )}
-        <h1 style={{ ...fontSans, fontWeight: 800, color: T.ink }} className="text-4xl sm:text-5xl tracking-tight leading-none">
+        <h1 style={{ ...fontSans, fontWeight: 800, color: T.ink }}
+          className="text-3xl sm:text-5xl tracking-tight leading-none">
           Finanzas
         </h1>
         <div className="mt-4">
@@ -45,7 +50,7 @@ export function Header({ config, user, currentMonth, setCurrentMonth, currentHal
               value={`${currentMonth}-${currentHalf}`}
               onChange={handleQuincenaChange}
               style={{ background: "white", borderColor: T.line, color: T.ink2, ...fontBody }}
-              className="px-3 py-1.5 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400 transition">
+              className="px-3 py-2 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400 transition min-h-[40px]">
               {quincenaOptions.map(({ month, half }) => (
                 <option key={`${month}-${half}`} value={`${month}-${half}`}>
                   {quincenaLabel(month, half)}
@@ -55,7 +60,7 @@ export function Header({ config, user, currentMonth, setCurrentMonth, currentHal
           ) : (
             <select value={currentMonth} onChange={e => setCurrentMonth(e.target.value)}
               style={{ background: "white", borderColor: T.line, color: T.ink2, ...fontBody }}
-              className="px-3 py-1.5 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400 transition">
+              className="px-3 py-2 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400 transition min-h-[40px]">
               {months.map(m => <option key={m} value={m}>{monthLabel(m)}</option>)}
             </select>
           )}
@@ -66,13 +71,13 @@ export function Header({ config, user, currentMonth, setCurrentMonth, currentHal
         <button
           onClick={() => setMenuOpen(!menuOpen)}
           style={{ borderColor: T.line, background: "white" }}
-          className="flex items-center gap-2 pl-1.5 pr-2.5 py-1.5 border rounded-xl hover:bg-slate-50 transition shadow-sm">
+          className="flex items-center gap-2 pl-2 pr-3 py-2 border rounded-xl hover:bg-slate-50 active:bg-slate-100 transition shadow-sm">
           {user?.photoURL ? (
             <img src={user.photoURL} referrerPolicy="no-referrer"
-              className="w-7 h-7 rounded-full" alt={firstName} />
+              className="w-8 h-8 rounded-full" alt={firstName} />
           ) : (
             <div style={{ background: T.accent, color: "white" }}
-              className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold">
+              className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold">
               {firstName?.[0]?.toUpperCase()}
             </div>
           )}
@@ -81,14 +86,14 @@ export function Header({ config, user, currentMonth, setCurrentMonth, currentHal
 
         {menuOpen && (
           <div style={{ background: "white", borderColor: T.line }}
-            className="absolute right-0 top-full mt-2 w-60 rounded-xl border shadow-md overflow-hidden z-40">
-            <div style={{ borderColor: T.line }} className="flex items-center gap-3 px-4 py-3 border-b">
+            className="absolute right-0 top-full mt-2 w-64 rounded-2xl border shadow-lg overflow-hidden z-40">
+            <div style={{ borderColor: T.line }} className="flex items-center gap-3 px-4 py-3.5 border-b">
               {user?.photoURL ? (
                 <img src={user.photoURL} referrerPolicy="no-referrer"
-                  className="w-9 h-9 rounded-full shrink-0" alt={firstName} />
+                  className="w-10 h-10 rounded-full shrink-0" alt={firstName} />
               ) : (
                 <div style={{ background: T.accent + "20", color: T.accent }}
-                  className="w-9 h-9 rounded-full flex items-center justify-center font-bold shrink-0">
+                  className="w-10 h-10 rounded-full flex items-center justify-center font-bold shrink-0">
                   {firstName?.[0]?.toUpperCase()}
                 </div>
               )}
@@ -100,14 +105,14 @@ export function Header({ config, user, currentMonth, setCurrentMonth, currentHal
             <button
               onClick={() => { onOpenSettings(); setMenuOpen(false); }}
               style={{ color: T.ink2 }}
-              className="w-full flex items-center gap-3 px-4 py-3 text-sm font-medium hover:bg-slate-50 transition">
-              <Settings size={14} /> Configuración
+              className="w-full flex items-center gap-3 px-4 py-3.5 text-sm font-medium hover:bg-slate-50 active:bg-slate-100 transition">
+              <Settings size={15} /> Configuración
             </button>
             <button
               onClick={onSignOut}
               style={{ color: T.ink2, borderColor: T.line }}
-              className="w-full flex items-center gap-3 px-4 py-3 text-sm font-medium hover:bg-slate-50 transition border-t">
-              <LogOut size={14} /> Cerrar sesión
+              className="w-full flex items-center gap-3 px-4 py-3.5 text-sm font-medium hover:bg-slate-50 active:bg-slate-100 transition border-t">
+              <LogOut size={15} /> Cerrar sesión
             </button>
           </div>
         )}

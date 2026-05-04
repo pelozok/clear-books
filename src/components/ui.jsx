@@ -15,13 +15,13 @@ export function Field({ label, hint, children }) {
 
 export function SettingsSection({ id, title, subtitle, danger, children }) {
   return (
-    <section id={id} className="scroll-mt-20">
+    <section id={id} className="scroll-mt-28 md:scroll-mt-20">
       <div className="mb-3">
         <h2 style={{ color: danger ? T.bad : T.ink, ...fontSans, fontWeight: 700 }} className="text-base">{title}</h2>
         {subtitle && <p style={{ color: T.muted }} className="text-sm mt-0.5">{subtitle}</p>}
       </div>
       <div style={{ background: "white", borderColor: danger ? "#fecaca" : T.line }}
-        className="rounded-lg border p-5 sm:p-6 space-y-5">
+        className="rounded-2xl border p-5 sm:p-6 space-y-5">
         {children}
       </div>
     </section>
@@ -32,9 +32,9 @@ export function SummaryCard({ label, value, subtitle, tone }) {
   const toneColor = { ink: T.ink, good: T.good, bad: T.bad, accent: T.accent }[tone] || T.ink;
   return (
     <div style={{ borderColor: T.line, borderLeftColor: toneColor }}
-      className="p-4 sm:p-5 border border-l-2 rounded-lg bg-white">
-      <div style={{ color: T.muted }} className="text-[10px] font-semibold tracking-[0.18em] uppercase mb-2">{label}</div>
-      <div style={{ ...fontMono, color: toneColor }} className="text-xl sm:text-2xl font-semibold tabular-nums leading-none">{value}</div>
+      className="p-4 sm:p-5 border border-l-[3px] rounded-2xl bg-white">
+      <div style={{ color: T.muted }} className="text-[10px] font-bold tracking-[0.18em] uppercase mb-2">{label}</div>
+      <div style={{ ...fontMono, color: toneColor }} className="text-lg sm:text-xl font-bold tabular-nums leading-none">{value}</div>
       {subtitle && <div style={{ color: T.muted }} className="text-[11px] mt-1.5 truncate">{subtitle}</div>}
     </div>
   );
@@ -42,7 +42,7 @@ export function SummaryCard({ label, value, subtitle, tone }) {
 
 export function Card({ children, className = "" }) {
   return (
-    <div style={{ background: "white", borderColor: T.line }} className={`p-5 sm:p-6 rounded-lg border ${className}`}>
+    <div style={{ background: "white", borderColor: T.line }} className={`p-5 sm:p-6 rounded-2xl border ${className}`}>
       {children}
     </div>
   );
@@ -123,8 +123,9 @@ export function Modal({ children, title, onClose }) {
   return (
     <div onClick={onClose} style={{ background: "rgba(15,23,42,0.5)" }}
       className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-5">
-      <div onClick={e => e.stopPropagation()} style={{ background: T.bg, color: T.ink, ...fontBody }}
-        className="w-full sm:max-w-md rounded-t-xl sm:rounded-xl shadow-xl max-h-[90vh] overflow-y-auto">
+      <div onClick={e => e.stopPropagation()}
+        style={{ background: T.bg, color: T.ink, ...fontBody, WebkitOverflowScrolling: "touch" }}
+        className="w-full sm:max-w-md rounded-t-2xl sm:rounded-2xl shadow-xl max-h-[92vh] overflow-y-auto">
         <div style={{ borderColor: T.line }} className="flex items-center justify-between px-5 py-4 border-b">
           <h2 style={{ fontWeight: 700, color: T.ink }} className="text-xl">{title}</h2>
           <button onClick={onClose} style={{ color: T.muted, background: T.bg2 }}
