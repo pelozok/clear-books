@@ -15,7 +15,7 @@ export default function App({ user, onSignOut }) {
   const [expenses,       setExpenses]       = useState([]);
   const [page,           setPage]           = useState("dashboard");
   const [showOnboarding, setShowOnboarding] = useState(false);
-  const [currentMonth,   setCurrentMonth]   = useState(nextMonthKey());
+  const [currentMonth,   setCurrentMonth]   = useState(monthKey(todayISO()));
 
   useEffect(() => {
     (async () => {
