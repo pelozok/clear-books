@@ -1,41 +1,77 @@
-# Finanzas personales
+# clear-books — Presupuesto del hogar
 
-App local de finanzas personales construida con Vite + React + Tailwind CSS v3.
+App web para llevar el presupuesto mensual o quincenal, inspirada en el "machote" familiar de Excel:
+**ingresos → gastos fijos → gastos variables → sobrante → "Terminamos el período con"**.
 
-## Instalación y uso
+**Producción:** https://pelozok.github.io/clear-books/
+
+## Qué hace
+
+- **Dos modos con páginas separadas**
+  - **Individual**: un salario, tu presupuesto personal.
+  - **Pareja**: dos salarios y **reparto proporcional** — la app calcula cuánto aporta cada
+    persona a los gastos del hogar según su salario, de modo que después de gastos y ahorro
+    (50/50) a ambos les quede exactamente lo mismo.
+- **Frecuencia mensual o quincenal**: todo (períodos, presupuestos, aportes) se ve según cómo
+  recibís el salario. Quincena 1 = día 1–15, quincena 2 = día 16 a fin de mes.
+- **Gastos fijos como plantilla**: se definen una vez y aparecen en cada período nuevo con su
+  checkbox de "pagado" (se marcan en verde, como en el Excel). El monto se puede editar en un
+  período sin afectar los demás.
+- **Gastos variables** por período, con categoría y fecha.
+- **Categorías personalizables** con ícono, color y presupuesto por período (barras de progreso).
+- **Soporte ₡ / $** con el tipo de cambio oficial del BCCR (venta), actualizado automáticamente
+  cada día vía la API pública del Ministerio de Hacienda. El período en curso usa el valor del
+  día; los pasados conservan el valor con el que se vivieron.
+- **Historial**: con cuánto terminó cada período y el ahorro acumulado.
+- **Exportar a Excel**: resumen por período, gastos fijos y variables en un `.xlsx`.
+
+## Stack
+
+| Capa | Tecnología |
+|---|---|
+| Frontend | Vite + React 18 + Tailwind CSS v3 |
+| Íconos | lucide-react (flat, monocromo) |
+| Base de datos | Firebase Firestore (documentos reales por período y por gasto) |
+| Auth | Google Sign-In (Firebase Authentication) |
+| Hosting | GitHub Pages (rama `gh-pages`) |
+| Tests | Vitest (lógica de cálculo y períodos) |
+
+## Desarrollo
 
 ```bash
 npm install
-npm run dev
+npm run dev     # http://localhost:5173
+npm test        # tests de la lógica (reparto, períodos)
 ```
 
-Abre http://localhost:5173 en tu navegador.
+Necesitás un archivo `.env.local` con las credenciales de Firebase (ver `.env.example`).
+Sin él, la app no carga.
 
-## Build de producción
+## Deploy
 
 ```bash
-npm run build
+npm run deploy   # build + publica en GitHub Pages
 ```
 
-Los archivos estáticos quedan en la carpeta `dist/`. Podés servirla con `npm run preview` o subirla a cualquier hosting estático.
+## Modelo de datos (Firestore, bajo `users/{uid}/`)
 
-## Dónde viven los datos
-
-Los datos se guardan en el **localStorage del navegador** bajo estas claves:
-
-| Clave | Contenido |
+| Ruta | Contenido |
 |---|---|
-| `finance:config` | Configuración: ingreso, moneda, meta de ahorro |
-| `finance:expenses` | Array de gastos registrados |
+| `config/profile` | Modo, frecuencia, personas y salarios, meta de ahorro, categorías, tipo de cambio |
+| `fixedTemplate/{id}` | Plantilla de gastos fijos (nombre, monto, moneda) |
+| `periods/{key}` | Un documento por período (`2026-07` o `2026-07-Q1`): snapshot editable de fijos, ingresos y ahorro |
+| `expenses/{id}` | Un documento por gasto variable, consultable por período |
 
-No hay servidor ni base de datos. Los datos nunca salen de tu computadora.
+Cada usuario solo puede leer y escribir sus propios datos (reglas de Firestore por `uid`,
+con lista de correos autorizados).
 
-## Cómo respaldar tus datos
+## La matemática del reparto (modo pareja)
 
-1. Abrí el ícono de **Ajustes** (engranaje) en la esquina superior derecha.
-2. Presioná **Exportar mis datos (JSON)**.
-3. Guardá el archivo descargado en iCloud Drive, Google Drive o donde prefieras.
+Con ingresos `I1`, `I2`, gastos del hogar `G` y ahorro `S` (dividido 50/50):
 
-Para restaurar un respaldo: Ajustes → **Importar datos (JSON)** → seleccioná el archivo exportado.
+```
+restante  = (I1 + I2 − G − S) / 2     ← igual para ambos
+aporte_i  = I_i − S/2 − restante      ← invariante: aporte1 + aporte2 = G
+```
 
-> **Importante:** si limpiás los datos del navegador (caché, cookies, historial) o usás modo incógnito, los datos se pierden. Exportá periódicamente para no perder tu historial.
+La lógica vive en `src/lib/calc.js` y está cubierta por tests (`npm test`).
