@@ -1,11 +1,9 @@
 import { useEffect, useState } from "react";
 import { ChevronLeft, History, PiggyBank } from "lucide-react";
 import { Card, EmptyState } from "../components/ui.jsx";
-import { fetchAllData } from "../data/archive.js";
+import { fetchAllData, summarizePeriods } from "../data/archive.js";
 import { fmt } from "../lib/format.js";
-import { sumCRC } from "../lib/calc.js";
 import { currentPeriodKey, periodLabel } from "../lib/periods.js";
-import { DEFAULT_RATE } from "../lib/exchange.js";
 
 // Cómo les fue en cada período: "Terminamos con" a lo largo del tiempo
 // y el ahorro acumulado según las metas de cada período.
@@ -16,20 +14,7 @@ export default function HistoryPage({ uid, profile, onBack }) {
     let alive = true;
     fetchAllData(uid).then(({ periods, expenses }) => {
       if (!alive) return;
-      const list = periods
-        .map((p) => {
-          const rate = p.exchangeRate || DEFAULT_RATE;
-          const income = Object.values(p.incomes || {}).reduce(
-            (s, inc) => s + (Number(inc.crc) || 0) + (Number(inc.usd) || 0) * rate,
-            0
-          );
-          const fixed = sumCRC(p.fixedItems || [], rate);
-          const variable = sumCRC(expenses.filter((e) => e.periodKey === p.key), rate);
-          const savings = Number(p.savingsGoal) || 0;
-          return { key: p.key, income, gastos: fixed + variable, savings, final: income - fixed - variable - savings };
-        })
-        .sort((a, b) => b.key.localeCompare(a.key));
-      setRows(list);
+      setRows(summarizePeriods(periods, expenses));
     });
     return () => { alive = false; };
   }, [uid]);

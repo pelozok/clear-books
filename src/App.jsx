@@ -30,11 +30,21 @@ function DashboardShell({ uid, profile, onOpenHistory, onOpenSettings, onSignOut
   }, [profile.frequency]);
 
   const { items: template } = useFixedTemplate(uid);
-  const { period, togglePaid, patchFixedItem } = usePeriod(uid, periodKey, profile, template);
+  const { period, togglePaid, patchFixedItem, updatePeriod } = usePeriod(uid, periodKey, profile, template);
   const { expenses, addExpense, removeExpense } = useExpenses(uid, periodKey);
   const [adding, setAdding] = useState(false);
 
   const rate = period?.exchangeRate ?? profile.exchangeRate ?? DEFAULT_RATE;
+
+  // El período EN CURSO sigue el tipo de cambio del día; los pasados
+  // conservan el snapshot con el que se vivieron.
+  useEffect(() => {
+    if (!period || periodKey !== currentPeriodKey(profile.frequency)) return;
+    const today = Number(profile.exchangeRate);
+    if (today > 0 && period.exchangeRate !== today) {
+      updatePeriod({ exchangeRate: today });
+    }
+  }, [period?.exchangeRate, profile.exchangeRate, profile.frequency, periodKey]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const body = (() => {
     if (!period) {
@@ -101,13 +111,19 @@ export default function App({ user, onSignOut }) {
     toastTimer.current = setTimeout(() => setToast(null), 2500);
   };
 
-  // Refresca el tipo de cambio una vez al día.
-  const rateStale = !!profile && shouldRefreshRate(profile.exchangeRateUpdatedAt);
+  // Refresca el tipo de cambio una vez al día (y una vez al migrar a la fuente BCCR).
+  const rateStale =
+    !!profile &&
+    (profile.exchangeRateSource !== "bccr" || shouldRefreshRate(profile.exchangeRateUpdatedAt));
   useEffect(() => {
     if (!rateStale) return;
     fetchExchangeRate()
       .then((rate) =>
-        saveProfile({ exchangeRate: rate, exchangeRateUpdatedAt: new Date().toISOString() })
+        saveProfile({
+          exchangeRate: rate,
+          exchangeRateSource: "bccr",
+          exchangeRateUpdatedAt: new Date().toISOString(),
+        })
       )
       .catch(() => {});
   }, [rateStale]); // eslint-disable-line react-hooks/exhaustive-deps

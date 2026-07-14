@@ -61,6 +61,7 @@ export default function ProfileSettings({ profile, saveProfile, showToast }) {
       })),
       savingsGoal: Number(draft.savingsGoal) || 0,
       exchangeRate: Number(draft.exchangeRate),
+      exchangeRateSource: "bccr",
       exchangeRateUpdatedAt: new Date().toISOString(),
     });
     setSaving(false);

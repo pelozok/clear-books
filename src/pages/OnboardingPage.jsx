@@ -61,6 +61,7 @@ export default function OnboardingPage({ uid }) {
           savingsGoal: Number(savingsGoal) || 0,
           categories: DEFAULT_CATEGORIES,
           exchangeRate: rate,
+          exchangeRateSource: "bccr",
           exchangeRateUpdatedAt: new Date().toISOString(),
         },
         fixed.filter((f) => f.name.trim() && Number(f.amount) > 0)
