@@ -1,3 +1,4 @@
+// Tokens de color (mismos valores que tailwind.config.js, para estilos inline).
 export const T = {
   bg:         "#fafaf9",
   bg2:        "#f5f5f4",
@@ -12,33 +13,35 @@ export const T = {
   bad:        "#dc2626",
 };
 
-export const FONTS = `
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,600&family=JetBrains+Mono:wght@400;500;600&display=swap');
-`;
-
-export const fontSans    = { fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif" };
-export const fontDisplay = { fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif", fontWeight: 700 };
-export const fontBody    = { fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif" };
-export const fontMono    = { fontFamily: "'JetBrains Mono', monospace" };
-
+// budget en CRC por período; 0 = sin presupuesto definido.
 export const DEFAULT_CATEGORIES = [
-  { id: "vivienda",        label: "Vivienda",        emoji: "🏠", type: "necesidad", color: "#4f46e5" },
-  { id: "alimentacion",    label: "Alimentación",    emoji: "🍽️", type: "necesidad", color: "#7c3aed" },
-  { id: "transporte",      label: "Transporte",      emoji: "🚗", type: "necesidad", color: "#0891b2" },
-  { id: "servicios",       label: "Servicios",       emoji: "⚡",  type: "necesidad", color: "#0369a1" },
-  { id: "salud",           label: "Salud",           emoji: "❤️", type: "necesidad", color: "#0f766e" },
-  { id: "educacion",       label: "Educación",       emoji: "📚", type: "deseo",     color: "#059669" },
-  { id: "entretenimiento", label: "Entretenimiento", emoji: "🎬", type: "deseo",     color: "#d97706" },
-  { id: "ropa",            label: "Ropa",            emoji: "👕", type: "deseo",     color: "#db2777" },
-  { id: "otros",           label: "Otros",           emoji: "💰", type: "deseo",     color: "#64748b" },
+  { id: "vivienda",        label: "Vivienda",        emoji: "🏠", color: "#4f46e5", budget: 0 },
+  { id: "alimentacion",    label: "Alimentación",    emoji: "🍽️", color: "#7c3aed", budget: 0 },
+  { id: "transporte",      label: "Transporte",      emoji: "🚗", color: "#0891b2", budget: 0 },
+  { id: "servicios",       label: "Servicios",       emoji: "⚡",  color: "#0369a1", budget: 0 },
+  { id: "salud",           label: "Salud",           emoji: "❤️", color: "#0f766e", budget: 0 },
+  { id: "entretenimiento", label: "Entretenimiento", emoji: "🎬", color: "#d97706", budget: 0 },
+  { id: "ropa",            label: "Ropa",            emoji: "👕", color: "#db2777", budget: 0 },
+  { id: "otros",           label: "Otros",           emoji: "💰", color: "#64748b", budget: 0 },
 ];
 
 export const COLOR_PALETTE = [
-  "#4f46e5","#7c3aed","#0891b2","#0369a1","#0f766e",
-  "#059669","#d97706","#dc2626","#db2777","#64748b","#92400e","#1d4ed8",
+  "#4f46e5", "#7c3aed", "#0891b2", "#0369a1", "#0f766e",
+  "#059669", "#d97706", "#dc2626", "#db2777", "#64748b", "#92400e", "#1d4ed8",
 ];
 
-export const DEFAULT_BUDGET_PCTS = {
-  vivienda: 0.25, alimentacion: 0.15, transporte: 0.05, servicios: 0.03, salud: 0.02,
-  educacion: 0.08, entretenimiento: 0.10, ropa: 0.07, otros: 0.05,
-};
+// Sugerencias de gastos fijos para el onboarding (del machote familiar).
+export const FIXED_SUGGESTIONS = [
+  { name: "Alquiler / Apartamento", categoryId: "vivienda" },
+  { name: "Internet",               categoryId: "servicios" },
+  { name: "Electricidad",           categoryId: "servicios" },
+  { name: "Agua",                   categoryId: "servicios" },
+  { name: "Celulares",              categoryId: "servicios" },
+  { name: "Auto (cuota)",           categoryId: "transporte" },
+  { name: "Gasolina",               categoryId: "transporte" },
+  { name: "Mercado",                categoryId: "alimentacion" },
+  { name: "Streaming (Netflix…)",   categoryId: "entretenimiento" },
+];
+
+export const getCat = (id, cats) =>
+  cats.find((c) => c.id === id) || cats[cats.length - 1];
