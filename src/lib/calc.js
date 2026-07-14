@@ -8,10 +8,10 @@ export const sumCRC = (items, rate) =>
 export const personIncomeCRC = (p, rate) =>
   (Number(p?.incomeCRC) || 0) + (Number(p?.incomeUSD) || 0) * rate;
 
-// Gasto total por categoría (fijos + variables), en CRC.
-export const totalsByCategory = (fixedItems, expenses, rate) => {
+// Gasto variable total por categoría, en CRC (los fijos no llevan categoría).
+export const totalsByCategory = (expenses, rate) => {
   const by = {};
-  for (const it of [...fixedItems, ...expenses]) {
+  for (const it of expenses) {
     const cat = it.categoryId || "otros";
     by[cat] = (by[cat] || 0) + toCRC(Number(it.amount) || 0, it.currency, rate);
   }

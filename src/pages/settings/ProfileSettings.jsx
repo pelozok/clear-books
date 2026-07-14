@@ -77,8 +77,8 @@ export default function ProfileSettings({ profile, saveProfile, showToast }) {
               value={draft.mode}
               onChange={setMode}
               options={[
-                { value: "individual", label: "🧍 Individual" },
-                { value: "pareja", label: "💑 Pareja" },
+                { value: "individual", label: "Individual" },
+                { value: "pareja", label: "Pareja" },
               ]}
             />
           </div>

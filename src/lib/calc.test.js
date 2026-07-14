@@ -25,13 +25,13 @@ describe("personIncomeCRC", () => {
 });
 
 describe("totalsByCategory", () => {
-  it("agrupa fijos y variables por categoría en CRC", () => {
-    const fixed = [{ amount: 300000, currency: "CRC", categoryId: "vivienda" }];
+  it("agrupa los gastos variables por categoría en CRC", () => {
     const variable = [
-      { amount: 20000, currency: "CRC", categoryId: "vivienda" },
+      { amount: 20000, currency: "CRC", categoryId: "alimentacion" },
+      { amount: 8000, currency: "CRC", categoryId: "alimentacion" },
       { amount: 10, currency: "USD", categoryId: "salud" },
     ];
-    expect(totalsByCategory(fixed, variable, 500)).toEqual({ vivienda: 320000, salud: 5000 });
+    expect(totalsByCategory(variable, 500)).toEqual({ alimentacion: 28000, salud: 5000 });
   });
 });
 

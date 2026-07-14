@@ -1,3 +1,4 @@
+import { TriangleAlert } from "lucide-react";
 import { Card } from "../../components/ui.jsx";
 import { fmt } from "../../lib/format.js";
 import { repartoPareja } from "../../lib/calc.js";
@@ -57,9 +58,12 @@ export default function ContributionCard({ people, incomes, gastos, ahorro, rate
       </div>
 
       {r.desbalance && (
-        <p className="text-xs text-warn mt-3 leading-relaxed">
-          ⚠️ Un salario no alcanza para cubrir su parte del ahorro; el otro cubre todos los
-          gastos del hogar. Revisá los montos o bajá la meta de ahorro.
+        <p className="text-xs text-warn mt-3 leading-relaxed flex gap-1.5">
+          <TriangleAlert size={14} className="shrink-0 mt-0.5" />
+          <span>
+            Un salario no alcanza para cubrir su parte del ahorro; el otro cubre todos los
+            gastos del hogar. Revisá los montos o bajá la meta de ahorro.
+          </span>
         </p>
       )}
     </Card>

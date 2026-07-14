@@ -13,6 +13,7 @@ import OnboardingPage from "./pages/OnboardingPage.jsx";
 import SoloDashboard from "./pages/SoloDashboard.jsx";
 import CoupleDashboard from "./pages/CoupleDashboard.jsx";
 import SettingsPage from "./pages/SettingsPage.jsx";
+import HistoryPage from "./pages/HistoryPage.jsx";
 
 function Loading({ text = "Cargando…" }) {
   return (
@@ -22,7 +23,7 @@ function Loading({ text = "Cargando…" }) {
   );
 }
 
-function DashboardShell({ uid, profile, onOpenSettings, onSignOut, showToast }) {
+function DashboardShell({ uid, profile, onOpenHistory, onOpenSettings, onSignOut, showToast }) {
   const [periodKey, setPeriodKey] = useState(() => currentPeriodKey(profile.frequency));
   useEffect(() => {
     setPeriodKey(currentPeriodKey(profile.frequency));
@@ -68,8 +69,10 @@ function DashboardShell({ uid, profile, onOpenSettings, onSignOut, showToast }) 
     <div className="max-w-xl mx-auto px-4 py-6 pb-16">
       <Header
         profile={profile}
+        rate={rate}
         periodKey={periodKey}
         setPeriodKey={setPeriodKey}
+        onOpenHistory={onOpenHistory}
         onOpenSettings={onOpenSettings}
         onSignOut={onSignOut}
       />
@@ -88,7 +91,7 @@ function DashboardShell({ uid, profile, onOpenSettings, onSignOut, showToast }) 
 
 export default function App({ user, onSignOut }) {
   const { profile, saveProfile } = useProfile(user.uid);
-  const [page, setPage] = useState("dashboard"); // "dashboard" | "settings"
+  const [page, setPage] = useState("dashboard"); // "dashboard" | "settings" | "history"
   const [toast, setToast] = useState(null);
   const toastTimer = useRef(null);
 
@@ -122,10 +125,13 @@ export default function App({ user, onSignOut }) {
           onBack={() => setPage("dashboard")}
           showToast={showToast}
         />
+      ) : page === "history" ? (
+        <HistoryPage uid={user.uid} profile={profile} onBack={() => setPage("dashboard")} />
       ) : (
         <DashboardShell
           uid={user.uid}
           profile={profile}
+          onOpenHistory={() => setPage("history")}
           onOpenSettings={() => setPage("settings")}
           onSignOut={onSignOut}
           showToast={showToast}

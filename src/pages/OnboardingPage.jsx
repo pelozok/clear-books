@@ -103,7 +103,6 @@ export default function OnboardingPage({ uid }) {
         {step === 2 && (
           <StepFixed
             fixed={fixed} setFixed={setFixed}
-            categories={DEFAULT_CATEGORIES}
             frequency={frequency} rate={DEFAULT_RATE}
           />
         )}

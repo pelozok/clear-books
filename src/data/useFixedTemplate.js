@@ -19,7 +19,6 @@ export function useFixedTemplate(uid) {
       name: data.name,
       amount: Number(data.amount) || 0,
       currency: data.currency || "CRC",
-      categoryId: data.categoryId,
       order: data.order ?? (items?.length || 0),
       createdAt: serverTimestamp(),
     });

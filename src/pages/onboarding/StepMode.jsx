@@ -1,8 +1,9 @@
+import { User, Users } from "lucide-react";
 import { Field, Input, Segmented } from "../../components/ui.jsx";
 
 const MODES = [
-  { value: "individual", emoji: "🧍", title: "Individual", desc: "Un salario. Tu presupuesto personal." },
-  { value: "pareja",     emoji: "💑", title: "Pareja",     desc: "Dos salarios. El presupuesto del hogar." },
+  { value: "individual", icon: User,  title: "Individual", desc: "Un salario. Tu presupuesto personal." },
+  { value: "pareja",     icon: Users, title: "Pareja",     desc: "Dos salarios. El presupuesto del hogar." },
 ];
 
 export default function StepMode({ mode, setMode, frequency, setFrequency, people, setPeople }) {
@@ -23,7 +24,7 @@ export default function StepMode({ mode, setMode, frequency, setFrequency, peopl
                 mode === m.value ? "border-accent bg-accent-soft" : "border-line bg-white hover:border-muted"
               }`}
             >
-              <div className="text-2xl mb-1.5">{m.emoji}</div>
+              <m.icon size={22} className={`mb-2 ${mode === m.value ? "text-accent" : "text-ink2"}`} />
               <div className="text-sm font-bold text-ink">{m.title}</div>
               <div className="text-xs text-ink2 mt-0.5 leading-snug">{m.desc}</div>
             </button>

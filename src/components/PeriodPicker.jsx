@@ -1,3 +1,4 @@
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { periodLabel, prevPeriodKey, nextPeriodKey, currentPeriodKey } from "../lib/periods.js";
 
 export default function PeriodPicker({ periodKey, setPeriodKey, frequency }) {
@@ -8,10 +9,10 @@ export default function PeriodPicker({ periodKey, setPeriodKey, frequency }) {
     <button
       type="button"
       onClick={onClick}
-      className="w-9 h-9 rounded-xl border border-line bg-white text-ink2 hover:text-ink hover:bg-bg2 text-lg leading-none"
+      className="w-9 h-9 rounded-xl border border-line bg-white text-ink2 hover:text-ink hover:bg-bg2 flex items-center justify-center"
       aria-label={dir === "prev" ? "Período anterior" : "Período siguiente"}
     >
-      {dir === "prev" ? "‹" : "›"}
+      {dir === "prev" ? <ChevronLeft size={18} /> : <ChevronRight size={18} />}
     </button>
   );
 

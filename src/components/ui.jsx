@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { X, ClipboardList } from "lucide-react";
 
 export function Card({ title, subtitle, action, children, className = "" }) {
   return (
@@ -95,7 +96,9 @@ export function Modal({ title, onClose, children }) {
       >
         <header className="flex items-center justify-between mb-4">
           <h3 className="text-base font-bold text-ink">{title}</h3>
-          <button onClick={onClose} className="text-muted hover:text-ink text-xl leading-none px-1">×</button>
+          <button onClick={onClose} aria-label="Cerrar" className="text-muted hover:text-ink p-1">
+            <X size={18} />
+          </button>
         </header>
         {children}
       </div>
@@ -115,10 +118,10 @@ export function ProgressBar({ pct, color }) {
   );
 }
 
-export function EmptyState({ emoji = "🗒️", text }) {
+export function EmptyState({ icon: Icon = ClipboardList, text }) {
   return (
     <div className="text-center py-8">
-      <div className="text-3xl mb-2">{emoji}</div>
+      <Icon size={28} className="mx-auto mb-2 text-muted" strokeWidth={1.75} />
       <p className="text-sm text-muted">{text}</p>
     </div>
   );

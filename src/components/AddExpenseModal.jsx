@@ -56,7 +56,7 @@ export default function AddExpenseModal({ periodKey, categories, onSave, onClose
         <Field label="Categoría">
           <Select value={form.categoryId} onChange={(e) => set("categoryId")(e.target.value)}>
             {categories.map((c) => (
-              <option key={c.id} value={c.id}>{c.emoji} {c.label}</option>
+              <option key={c.id} value={c.id}>{c.label}</option>
             ))}
           </Select>
         </Field>

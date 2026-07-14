@@ -36,7 +36,6 @@ export function usePeriod(uid, key, profile, template) {
         name: t.name,
         amount: t.amount,
         currency: t.currency,
-        categoryId: t.categoryId,
         paid: false,
         paidAt: null,
       })),

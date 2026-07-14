@@ -1,6 +1,8 @@
+import { ChevronLeft } from "lucide-react";
 import ProfileSettings from "./settings/ProfileSettings.jsx";
 import FixedTemplateSettings from "./settings/FixedTemplateSettings.jsx";
 import CategorySettings from "./settings/CategorySettings.jsx";
+import DataSettings from "./settings/DataSettings.jsx";
 import { DEFAULT_RATE } from "../lib/exchange.js";
 
 export default function SettingsPage({ uid, profile, saveProfile, onBack, showToast }) {
@@ -12,18 +14,19 @@ export default function SettingsPage({ uid, profile, saveProfile, onBack, showTo
         <button
           type="button"
           onClick={onBack}
-          className="w-9 h-9 rounded-xl border border-line bg-white text-ink2 hover:bg-bg2 text-lg leading-none"
+          className="w-9 h-9 rounded-xl border border-line bg-white text-ink2 hover:bg-bg2 flex items-center justify-center"
           aria-label="Volver"
         >
-          ‹
+          <ChevronLeft size={18} />
         </button>
         <h1 className="text-lg font-extrabold text-ink">Ajustes</h1>
       </header>
 
       <div className="space-y-4">
         <ProfileSettings profile={profile} saveProfile={saveProfile} showToast={showToast} />
-        <FixedTemplateSettings uid={uid} profile={profile} showToast={showToast} rate={rate} />
+        <FixedTemplateSettings uid={uid} showToast={showToast} rate={rate} />
         <CategorySettings profile={profile} saveProfile={saveProfile} showToast={showToast} />
+        <DataSettings uid={uid} showToast={showToast} />
       </div>
     </div>
   );

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Plus, X } from "lucide-react";
 import { Card, Btn, Input, Select } from "../../components/ui.jsx";
 import { useFixedTemplate } from "../../data/useFixedTemplate.js";
 import { fmt } from "../../lib/format.js";
@@ -6,9 +7,9 @@ import { sumCRC } from "../../lib/calc.js";
 
 // CRUD de la plantilla de gastos fijos. Los cambios aparecen en los
 // períodos que se creen a partir de ahora; los ya creados no cambian.
-export default function FixedTemplateSettings({ uid, profile, showToast, rate }) {
+export default function FixedTemplateSettings({ uid, showToast, rate }) {
   const { items, addItem, updateItem, removeItem } = useFixedTemplate(uid);
-  const [nuevo, setNuevo] = useState({ name: "", amount: "", currency: "CRC", categoryId: "otros" });
+  const [nuevo, setNuevo] = useState({ name: "", amount: "", currency: "CRC" });
 
   if (items === null) {
     return <Card title="Gastos fijos"><p className="text-sm text-muted">Cargando…</p></Card>;
@@ -17,7 +18,7 @@ export default function FixedTemplateSettings({ uid, profile, showToast, rate })
   const add = async () => {
     if (!nuevo.name.trim() || !(Number(nuevo.amount) > 0)) return;
     await addItem({ ...nuevo, name: nuevo.name.trim() });
-    setNuevo({ name: "", amount: "", currency: "CRC", categoryId: "otros" });
+    setNuevo({ name: "", amount: "", currency: "CRC" });
     showToast("Gasto fijo agregado");
   };
 
@@ -42,35 +43,25 @@ export default function FixedTemplateSettings({ uid, profile, showToast, rate })
             />
             <Input
               type="number" inputMode="numeric" min="0"
-              className="w-24 text-right font-mono"
+              className="!w-28 text-right font-mono"
               defaultValue={item.amount}
               onBlur={(e) => commit(item, "amount", e.target.value)}
             />
             <Select
-              className="w-16 !px-1"
+              className="!w-16 !px-1"
               value={item.currency}
               onChange={(e) => commit(item, "currency", e.target.value)}
             >
               <option value="CRC">₡</option>
               <option value="USD">$</option>
             </Select>
-            <Select
-              className="w-14 !px-1.5 text-center"
-              value={item.categoryId}
-              onChange={(e) => commit(item, "categoryId", e.target.value)}
-              title="Categoría"
-            >
-              {profile.categories.map((c) => (
-                <option key={c.id} value={c.id}>{c.emoji}</option>
-              ))}
-            </Select>
             <button
               type="button"
               onClick={() => removeItem(item.id).then(() => showToast("Gasto fijo eliminado"))}
-              className="text-muted hover:text-bad text-lg px-1"
+              className="text-muted hover:text-bad p-1"
               title="Eliminar"
             >
-              ×
+              <X size={16} />
             </button>
           </div>
         ))}
@@ -88,23 +79,20 @@ export default function FixedTemplateSettings({ uid, profile, showToast, rate })
         />
         <Input
           type="number" inputMode="numeric" min="0"
-          className="w-24 text-right font-mono"
+          className="!w-28 text-right font-mono"
           placeholder="Monto"
           value={nuevo.amount}
           onChange={(e) => setNuevo({ ...nuevo, amount: e.target.value })}
           onKeyDown={(e) => e.key === "Enter" && add()}
         />
-        <Select
-          className="w-14 !px-1.5 text-center"
-          value={nuevo.categoryId}
-          onChange={(e) => setNuevo({ ...nuevo, categoryId: e.target.value })}
+        <Btn
+          variant="soft"
+          onClick={add}
+          disabled={!nuevo.name.trim() || !(Number(nuevo.amount) > 0)}
+          className="!px-3"
+          title="Agregar"
         >
-          {profile.categories.map((c) => (
-            <option key={c.id} value={c.id}>{c.emoji}</option>
-          ))}
-        </Select>
-        <Btn variant="soft" onClick={add} disabled={!nuevo.name.trim() || !(Number(nuevo.amount) > 0)}>
-          +
+          <Plus size={16} />
         </Btn>
       </div>
     </Card>

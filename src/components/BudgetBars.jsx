@@ -2,10 +2,11 @@ import { Card, ProgressBar } from "./ui.jsx";
 import { fmt } from "../lib/format.js";
 import { totalsByCategory } from "../lib/calc.js";
 import { T } from "../lib/constants.js";
+import { CategoryIcon } from "../lib/icons.jsx";
 
-// Barras de gasto por categoría contra su presupuesto (fijos + variables).
-export default function BudgetBars({ categories, fixedItems, expenses, rate }) {
-  const spent = totalsByCategory(fixedItems, expenses, rate);
+// Barras de gasto variable por categoría contra su presupuesto.
+export default function BudgetBars({ categories, expenses, rate }) {
+  const spent = totalsByCategory(expenses, rate);
   const rows = categories
     .map((c) => ({ ...c, spent: spent[c.id] || 0 }))
     .filter((c) => c.budget > 0 || c.spent > 0);
@@ -17,7 +18,7 @@ export default function BudgetBars({ categories, fixedItems, expenses, rate }) {
   return (
     <Card
       title="Por categoría"
-      subtitle={anyBudget ? "Gasto del período contra tu presupuesto" : "Definí presupuestos por categoría en Ajustes"}
+      subtitle={anyBudget ? "Gasto variable del período contra tu presupuesto" : "Definí presupuestos por categoría en Ajustes"}
     >
       <div className="space-y-3.5">
         {rows.map((c) => {
@@ -26,8 +27,8 @@ export default function BudgetBars({ categories, fixedItems, expenses, rate }) {
           return (
             <div key={c.id}>
               <div className="flex items-center justify-between mb-1">
-                <span className="text-sm text-ink">
-                  <span className="mr-1.5">{c.emoji}</span>
+                <span className="text-sm text-ink flex items-center gap-1.5">
+                  <CategoryIcon category={c} size={15} />
                   {c.label}
                 </span>
                 <span className={`text-xs font-mono font-semibold ${over ? "text-bad" : "text-ink2"}`}>

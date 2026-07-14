@@ -19,7 +19,6 @@ export default function SoloDashboard({
       />
       <FixedExpensesCard
         items={period.fixedItems}
-        categories={profile.categories}
         rate={rate}
         onTogglePaid={onTogglePaid}
         onPatchItem={onPatchItem}
@@ -31,12 +30,7 @@ export default function SoloDashboard({
         onAdd={onAddExpense}
         onRemove={onRemoveExpense}
       />
-      <BudgetBars
-        categories={profile.categories}
-        fixedItems={period.fixedItems}
-        expenses={expenses || []}
-        rate={rate}
-      />
+      <BudgetBars categories={profile.categories} expenses={expenses || []} rate={rate} />
     </div>
   );
 }

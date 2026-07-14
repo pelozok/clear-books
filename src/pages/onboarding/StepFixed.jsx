@@ -1,14 +1,15 @@
-import { Btn, Input, Select } from "../../components/ui.jsx";
+import { Plus, X } from "lucide-react";
+import { Btn, Input } from "../../components/ui.jsx";
 import { fmt } from "../../lib/format.js";
 import { sumCRC } from "../../lib/calc.js";
 
-export default function StepFixed({ fixed, setFixed, categories, frequency, rate }) {
+export default function StepFixed({ fixed, setFixed, frequency, rate }) {
   const per = frequency === "quincenal" ? "por quincena" : "por mes";
 
   const setField = (i, field, value) =>
     setFixed(fixed.map((f, j) => (j === i ? { ...f, [field]: value } : f)));
   const remove = (i) => setFixed(fixed.filter((_, j) => j !== i));
-  const add = () => setFixed([...fixed, { name: "", amount: "", currency: "CRC", categoryId: "otros" }]);
+  const add = () => setFixed([...fixed, { name: "", amount: "", currency: "CRC" }]);
 
   const valid = fixed.filter((f) => f.name.trim() && Number(f.amount) > 0);
 
@@ -31,34 +32,26 @@ export default function StepFixed({ fixed, setFixed, categories, frequency, rate
             />
             <Input
               type="number" inputMode="numeric" min="0"
-              className="w-28"
+              className="!w-32 text-right font-mono"
               value={f.amount}
               onChange={(e) => setField(i, "amount", e.target.value)}
               placeholder="₡ monto"
             />
-            <Select
-              className="w-14 !px-1.5 text-center"
-              value={f.categoryId}
-              onChange={(e) => setField(i, "categoryId", e.target.value)}
-              title="Categoría"
-            >
-              {categories.map((c) => (
-                <option key={c.id} value={c.id}>{c.emoji}</option>
-              ))}
-            </Select>
             <button
               type="button"
               onClick={() => remove(i)}
-              className="text-muted hover:text-bad text-lg px-1"
+              className="text-muted hover:text-bad p-1"
               title="Quitar"
             >
-              ×
+              <X size={16} />
             </button>
           </div>
         ))}
       </div>
 
-      <Btn variant="ghost" onClick={add}>+ Agregar otro</Btn>
+      <Btn variant="ghost" onClick={add} className="flex items-center gap-1.5">
+        <Plus size={15} /> Agregar otro
+      </Btn>
 
       <div className="flex items-center justify-between bg-bg2 rounded-xl px-4 py-3">
         <span className="text-xs font-semibold text-ink2">Total de gastos fijos {per}</span>

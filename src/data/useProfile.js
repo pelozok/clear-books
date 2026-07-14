@@ -33,7 +33,6 @@ export async function createProfile(uid, profileData, fixedItems) {
       name: item.name,
       amount: Number(item.amount) || 0,
       currency: item.currency || "CRC",
-      categoryId: item.categoryId,
       order: i,
       createdAt: serverTimestamp(),
     });
