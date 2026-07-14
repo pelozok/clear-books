@@ -38,7 +38,7 @@ export default function ProfileSettings({ profile, saveProfile, showToast }) {
     try {
       const rate = await fetchExchangeRate();
       setDraft((d) => ({ ...d, exchangeRate: rate }));
-      showToast(`Tipo de cambio: ₡${rate}`);
+      showToast(`Tipo de cambio BCCR: ₡${rate}`);
     } catch {
       showToast("No se pudo obtener el tipo de cambio");
     }
@@ -125,10 +125,10 @@ export default function ProfileSettings({ profile, saveProfile, showToast }) {
               onChange={(e) => setDraft({ ...draft, savingsGoal: e.target.value })}
             />
           </Field>
-          <Field label="Tipo de cambio (₡ por $)">
+          <Field label="Tipo de cambio (₡ por $)" hint="Venta del BCCR; se actualiza solo cada día.">
             <div className="flex gap-2">
               <Input
-                type="number" inputMode="numeric" min="1"
+                type="number" inputMode="decimal" min="1" step="0.01"
                 value={draft.exchangeRate}
                 onChange={(e) => setDraft({ ...draft, exchangeRate: e.target.value })}
               />
