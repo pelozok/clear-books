@@ -1,5 +1,5 @@
 // Mes en vivo. Si no existe y está permitido (≤ mes actual + 1, ≥ arranque), lo materializa.
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { getDoc, onSnapshot } from "firebase/firestore";
 import { monthRef, profileRef } from "../db.js";
 import { docData, isOffline } from "../snap.js";
@@ -18,6 +18,9 @@ export function useMonth(hid, key) {
   const [mat, setMat] = useState({ key: null, beforeStart: false, error: null });
   const tried = useRef(new Set());
 
+  // Mismo objeto mientras no cambie el doc (si no, todo lo que dependa del mes se recalcula en cada render).
+  const raw = live.data?.doc ?? null;
+  const derived = useMemo(() => deriveMonth(raw), [raw]);
   const missing = !!live.data && !live.data.doc;
   // Un "no existe" desde la caché puede ser falso: esperamos al servidor salvo offline.
   const canDecide = missing && (!live.data.fromCache || isOffline());
@@ -39,11 +42,11 @@ export function useMonth(hid, key) {
     });
   }, [k, canDecide, tooFar, hid, key]);
 
-  if (tooFar) return { data: deriveMonth(live.data?.doc ?? null), loading: false, error: live.error, tooFar: !live.data?.doc, beforeStart: false };
+  if (tooFar) return { data: derived, loading: false, error: live.error, tooFar: !live.data?.doc, beforeStart: false };
   const own = mat.key === k ? mat : { beforeStart: false, error: null };
   const waiting = missing && !own.beforeStart && !own.error;
   return {
-    data: deriveMonth(live.data?.doc ?? null),
+    data: derived,
     loading: live.loading || waiting,
     error: live.error || own.error,
     tooFar: false,

@@ -1,5 +1,5 @@
 // Junta lo que necesita el plan del mes y llama a la lib (no calcula acá).
-import { useEffect, useMemo } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 import { autoSavingsSync } from '../../data/pure/monthOps.js'
 import { syncAutoSavings } from '../../data/actions/index.js'
 import { deriveMonth } from '../../lib/derive.js'
@@ -8,12 +8,14 @@ import { useAnnual, useEntries, useLedger, useMonth, useMonthsIndex, useSavingsP
 import { monthTotals, teQueda } from '../../lib/plan.js'
 import { spendBudget } from '../../lib/budget.js'
 import { monthSavingsSummary } from '../../lib/savings.js'
-import { todayISO } from '../../lib/periods.js'
+import { shiftMonth, todayISO } from '../../lib/periods.js'
+import { categoryBreakdown, totalsByCategory } from '../../lib/categories.js'
 
 export function useMonthPlan(key) {
   const { hid, me, profile } = useHousehold()
   const month = useMonth(hid, key)
   const entries = useEntries(hid, key)
+  const prevEntries = useEntries(hid, key ? shiftMonth(key, -1) : null)
   const places = useSavingsPlaces(hid)
   const ledger = useLedger(hid)
   const annual = useAnnual(hid)
@@ -23,8 +25,14 @@ export function useMonthPlan(key) {
   // Ahorro automático: el perfil manda sobre el ahorro sin confirmar del mes abierto.
   const sync = useMemo(() => autoSavingsSync(month.data, profile), [month.data, profile])
   const doc = useMemo(() => (sync ? deriveMonth({ ...month.data, savings: sync }) : month.data), [sync, month.data])
+  // Una sola escritura por cambio (si falla, no reintenta en bucle).
+  const synced = useRef(null)
   useEffect(() => {
-    if (sync && month.data) syncAutoSavings(hid, me, month.data, sync).catch(() => {})
+    if (!sync || !month.data) return
+    const sig = `${month.data.id}:${JSON.stringify(sync)}`
+    if (synced.current === sig) return
+    synced.current = sig
+    syncAutoSavings(hid, me, month.data, sync).catch(() => {})
   }, [sync, month.data, hid, me])
   const list = useMemo(() => entries.data || [], [entries.data])
   const derived = useMemo(() => {
@@ -35,9 +43,10 @@ export function useMonthPlan(key) {
       plan,
       totals,
       budget: spendBudget({ month: doc, profile, plan, totals }),
+      categories: categoryBreakdown(list, prevEntries.data?.length ? totalsByCategory(prevEntries.data) : null),
       savings: monthSavingsSummary(doc),
     }
-  }, [doc, profile, list, today])
+  }, [doc, profile, list, today, prevEntries.data])
 
   return {
     hid,

@@ -6,6 +6,7 @@ import MonthHeader from '../components/month/MonthHeader.jsx'
 import TeQuedaCard from '../components/month/TeQuedaCard.jsx'
 import MonthSummaryCard from '../components/month/MonthSummaryCard.jsx'
 import BudgetCard from '../components/month/BudgetCard.jsx'
+import CategoryCard from '../components/month/CategoryCard.jsx'
 import SavingsSection from '../components/month/SavingsSection.jsx'
 import FixedSection from '../components/month/FixedSection.jsx'
 import ExtrasSection from '../components/month/ExtrasSection.jsx'
@@ -98,6 +99,7 @@ export default function MonthPage() {
           <div className="flex flex-col gap-6">
             <FixedSection {...common} totals={d.totals} entriesCount={d.entries.length} currentHalf={currentHalf} />
             <SavingsSection {...common} summary={d.savings} currentHalf={currentHalf} ledger={d.ledger} annual={d.annual} />
+            <CategoryCard rows={d.categories} profile={profile} monthKey={key} />
             <ReserveSection {...common} />
             <ExtrasSection {...common} />
           </div>

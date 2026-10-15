@@ -4,6 +4,7 @@ import { EmptyState, PageHeader } from '../components/ui/index.js'
 import SavingsCurve from '../components/history/SavingsCurve.jsx'
 import MonthHistoryList from '../components/history/MonthHistoryList.jsx'
 import ExportCard from '../components/history/ExportCard.jsx'
+import CategoryHistory from '../components/history/CategoryHistory.jsx'
 import { accumulatedSeries, monthRows } from '../components/history/historyData.js'
 import { PageError, PageSkeleton } from '../components/savings/PageStates.jsx'
 import { useSavingsOverview } from '../components/savings/useSavingsOverview.js'
@@ -32,6 +33,7 @@ export default function HistoryPage() {
           {ready ? (
             <>
               <SavingsCurve series={series} total={s.totals.totalCRC} couple={couple} />
+              <CategoryHistory closed={s.closed} profile={s.profile} />
               <MonthHistoryList rows={rows} couple={couple} />
             </>
           ) : (

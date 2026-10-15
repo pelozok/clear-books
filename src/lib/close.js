@@ -172,7 +172,7 @@ const settleUntouched = (month, today, monthKey, autoSavings = {}) => {
 //   deficitResolution: null | { choice, amount }, leftoverReported: null | number,
 //   destination: 'libre' | 'ahorro', seenBy: ['correo'] }.
 // totals (opcional, de plan.monthTotals) permite guardar leftoverPlanned.
-export const applyClose = ({ month, decisions = {}, today, placeId = null, monthKey: mk, totals = null, autoSavings = {} }) => {
+export const applyClose = ({ month, decisions = {}, today, placeId = null, monthKey: mk, totals = null, autoSavings = {}, byCategory = null }) => {
   const monthKey = keyOf(month, mk);
   const nextKey = monthKey ? shiftMonth(monthKey, 1) : null;
   const settled = settleUntouched(month, today, monthKey, autoSavings);
@@ -213,7 +213,7 @@ export const applyClose = ({ month, decisions = {}, today, placeId = null, month
   // Gastado en el mes (₡): fijos pagados + variables + extras de gasto de la cuenta.
   const spent = totals ? fixedCommittedCRC(closed) + num(totals.variable) + num(totals.extrasOut) : null;
   closed.closing = {
-    closedAt: today, spent, leftoverPlanned, leftoverReported, unlogged, deficitResolution, destination,
+    closedAt: today, spent, byCategory, leftoverPlanned, leftoverReported, unlogged, deficitResolution, destination,
     seenBy: decisions.seenBy || [],
   };
   const nextCarryIn = deficitResolution === "carry" ? num(closed.carryover?.out) : 0;
