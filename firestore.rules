@@ -8,8 +8,14 @@ service cloud.firestore {
 
     // La pareja entra con su propio Google: su correo debe coincidir con
     // partnerEmail del perfil del hogar (users/{uid}/config/profile).
+    // Solo correos verificados por el proveedor (Google): nadie puede "tomar" un correo
+    // de la lista registrándose con otro método sin verificarlo.
+    function verified() {
+      return request.auth != null && request.auth.token.email_verified == true;
+    }
+
     function isPartner(uid) {
-      return request.auth != null
+      return verified()
         && request.auth.token.email != null
         && get(/databases/$(database)/documents/users/$(uid)/config/profile).data.partnerEmail == request.auth.token.email;
     }
@@ -19,7 +25,7 @@ service cloud.firestore {
     // (ver docs/FIREBASE.md). La pareja invitada no necesita estar aquí para entrar
     // al hogar del dueño, pero sí para tener un perfil propio con partnerOf.
     function isAllowed() {
-      return request.auth != null
+      return verified()
         && request.auth.token.email in [
              'kevindp2008@gmail.com',
              'astridfatjo@gmail.com',
