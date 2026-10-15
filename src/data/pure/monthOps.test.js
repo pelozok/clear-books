@@ -64,3 +64,13 @@ describe("profileToMonthPatch", () => {
     expect(out.savings.perPerson.p1.q2).toMatchObject({ planned: 50000, actual: 50000 });
   });
 });
+
+describe("profileToMonthPatch frecuencia", () => {
+  it("de quincenal a mensual deja un solo ahorro", () => {
+    const month = { frequency: "quincenal", incomes: {}, savings: { perPerson: { p1: { q1: { planned: 50000, actual: null }, q2: { planned: 50000, actual: null } } } } };
+    const out = profileToMonthPatch(month, [{ id: "p1", incomeUSD: 1500, savingsPerPeriod: 300, savingsCurrency: "USD" }], "mensual");
+    expect(out.frequency).toBe("mensual");
+    expect(Object.keys(out.savings.perPerson.p1)).toEqual(["q1"]);
+    expect(out.savings.perPerson.p1.q1).toMatchObject({ plannedAmount: 300, plannedCurrency: "USD" });
+  });
+});

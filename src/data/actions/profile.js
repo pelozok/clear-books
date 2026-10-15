@@ -56,9 +56,9 @@ export const saveProfile = (hid, me, patch) =>
   setDoc(profileRef(hid), { ...patch, ...touched() }, { merge: true });
 
 // Aplica ingreso y ahorro del perfil al mes abierto.
-export async function applyProfileToMonth(hid, me, month, people) {
+export async function applyProfileToMonth(hid, me, month, people, frequency) {
   assertOpen(month);
   const batch = newBatch();
-  batch.update(monthDoc(hid, month), { ...profileToMonthPatch(month, people), ...touched() });
+  batch.update(monthDoc(hid, month), { ...profileToMonthPatch(month, people, frequency), ...touched() });
   await commit(batch);
 }

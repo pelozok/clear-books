@@ -78,22 +78,29 @@ export const toPlain = (v) => {
   return v;
 };
 
-// Lleva ingreso y ahorro del perfil al mes abierto. El ahorro solo cambia en los
-// slots sin confirmar (y no revive una 1ra quincena que quedó en 0 por arranque parcial).
-export const profileToMonthPatch = (month, people = []) => {
+// Lleva ingreso, ahorro y frecuencia del perfil al mes abierto. El ahorro solo cambia
+// en los slots sin confirmar (y no revive una 1ra quincena que quedó en 0 por arranque
+// parcial). Pasar a mensual quita la 2da quincena si no tiene ahorro confirmado.
+export const profileToMonthPatch = (month, people = [], frequency = null) => {
   const incomes = { ...(month?.incomes || {}) };
   const perPerson = {};
   for (const [pid, halves] of Object.entries(month?.savings?.perPerson || {})) {
     perPerson[pid] = {};
     for (const [hk, row] of Object.entries(halves || {})) perPerson[pid][hk] = { ...row };
   }
+  const freq = frequency || month?.frequency || "mensual";
   for (const p of people) {
     incomes[p.id] = { salaryCRC: Number(p.incomeCRC) || 0, salaryUSD: Number(p.incomeUSD) || 0 };
+    const slots = (perPerson[p.id] ||= {});
+    const blank = { planned: 0, actual: null, at: null, note: null, ledgerId: null };
+    if (!slots.q1) slots.q1 = { ...blank };
+    if (freq === "quincenal" && !slots.q2) slots.q2 = { ...blank };
+    if (freq !== "quincenal" && slots.q2 && slots.q2.actual == null) delete slots.q2;
     for (const [hk, row] of Object.entries(perPerson[p.id] || {})) {
       if (row.actual != null) continue;
       if (month?.partial && hk === "q1" && !row.planned && !row.plannedAmount) continue;
       Object.assign(row, savingsPlanOf(p));
     }
   }
-  return { incomes, savings: { ...(month?.savings || {}), perPerson } };
+  return { frequency: freq, incomes, savings: { ...(month?.savings || {}), perPerson } };
 };

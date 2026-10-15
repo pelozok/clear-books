@@ -60,7 +60,7 @@ export default function ProfileSection({ hid, me, profile }) {
     try {
       const people = visible.map((p) => fromDraft(p, factorOf(d.frequency)))
       await saveProfile(hid, me, { mode: d.mode, frequency: d.frequency, splitRule: d.splitRule, people })
-      if (apply && canApply) await applyProfileToMonth(hid, me, month, people)
+      if (apply && canApply) await applyProfileToMonth(hid, me, month, people, d.frequency)
       toast.success(apply && canApply ? 'Perfil guardado, también en el mes en curso.' : 'Perfil guardado. Aplica desde el próximo mes.')
     } catch (e) {
       toast.error(`No se pudo guardar: ${e.message || e}`)
@@ -76,7 +76,7 @@ export default function ProfileSection({ hid, me, profile }) {
           <Field label="Modo">
             <Segmented options={MODE} value={d.mode} onChange={setMode} />
           </Field>
-          <Field label="Frecuencia de pago" hint="Cambiarla afecta a los meses nuevos, no al que está abierto.">
+          <Field label="Frecuencia de pago">
             <Segmented options={FREQ} value={d.frequency} onChange={(frequency) => set({ frequency })} />
           </Field>
         </div>
@@ -154,14 +154,14 @@ export default function ProfileSection({ hid, me, profile }) {
           <CheckRow
             checked={apply}
             onChange={setApply}
-            label={`Aplicar ingreso y ahorro al mes en curso (${monthLabel(curKey)})`}
-            hint="El ahorro que ya confirmaste no se toca. La frecuencia sigue cambiando desde el mes que viene."
+            label={`Aplicar también a ${monthLabel(curKey)}`}
+            hint="Ingreso, ahorro y frecuencia cambian ya en el mes en curso. El ahorro que ya confirmaste no se toca."
           />
         )}
         <Button full loading={saving} disabled={!valid} onClick={save}>
           Guardar perfil
         </Button>
-        <p className="text-small text-muted">Aplica a los meses nuevos. Para el mes en curso, ajustá ingresos y ahorro desde su pantalla.</p>
+        <p className="text-small text-muted">Sin la casilla de arriba, aplica desde el mes que viene.</p>
       </div>
 
       <NetSalarySheet
