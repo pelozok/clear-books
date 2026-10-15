@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { savingsPerPeriodCRC } from '../../lib/savings.js'
 import { CalendarClock } from 'lucide-react'
 import { AmountInput, Button, Field, Input, Row, Select, Sheet, useToast } from '../ui/index.js'
 import { useAnnual } from '../../data/hooks/index.js'
@@ -18,7 +19,7 @@ export default function AnnualSection({ hid, me, profile }) {
   const items = (data || []).filter((a) => a.active !== false)
   const [edit, setEdit] = useState(null)
   const [busy, setBusy] = useState(false)
-  const base = (profile?.people || []).reduce((t, p) => t + (Number(p.savingsPerPeriod) || 0), 0) *
+  const base = (profile?.people || []).reduce((t, p) => t + savingsPerPeriodCRC(p, profile?.exchangeRateDefault), 0) *
     (profile?.frequency === 'quincenal' ? 2 : 1)
 
   const patch = (p) => setEdit((e) => ({ ...e, ...p }))

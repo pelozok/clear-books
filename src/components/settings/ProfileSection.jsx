@@ -25,6 +25,7 @@ const fromDraft = ({ income, incomeCurrency, ...p }, f = 1) => ({
   incomeCRC: incomeCurrency === 'USD' ? 0 : (Number(income) || 0) * f,
   incomeUSD: incomeCurrency === 'USD' ? (Number(income) || 0) * f : 0,
   savingsPerPeriod: Number(p.savingsPerPeriod) || 0,
+  savingsCurrency: p.savingsCurrency === 'USD' ? 'USD' : 'CRC',
 })
 
 export default function ProfileSection({ hid, me, profile }) {
@@ -85,7 +86,7 @@ export default function ProfileSection({ hid, me, profile }) {
               ¿No sabés tu neto? Calculalo
             </button>
             <Field label={`Ahorro ${per}`}>
-              <AmountInput value={p.savingsPerPeriod} currency="CRC" allowCurrencyToggle={false} onChange={({ amount }) => setPerson(i, { savingsPerPeriod: amount })} />
+              <AmountInput value={p.savingsPerPeriod} currency={p.savingsCurrency || 'CRC'} onChange={({ amount, currency }) => setPerson(i, { savingsPerPeriod: amount, savingsCurrency: currency })} />
             </Field>
             <Field
               label="Cómo apartás el ahorro"

@@ -2,7 +2,7 @@
 // la plantilla de fijos, las reservas anuales y el mes anterior. Función pura:
 // no toca Firestore ni lee la fecha del sistema (recibe `today`).
 import { reserveBreakdown } from "./reserve.js";
-import { withPercentAmounts } from "./percent.js";
+import { deriveMonth } from "./derive.js";
 
 const MESES_MIN = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
 const pad = (n) => String(n).padStart(2, "0");
@@ -19,7 +19,12 @@ const halfOf = (iso) => (parseInt(iso.slice(8, 10), 10) <= 15 ? 1 : 2);
 // Quita un sufijo "(de septiembre)" previo para no encadenar al diferir dos veces.
 const baseName = (name = "") => name.replace(/\s*\(de [a-záéíóú]+\)\s*$/i, "");
 
-const savingsSlot = (planned) => ({ planned, actual: null, at: null, note: null, ledgerId: null });
+// planned siempre en ₡; si el ahorro se define en $, plannedAmount/plannedCurrency lo guardan
+// y deriveMonth recalcula planned con el TC del mes.
+const savingsSlot = (planned, currency = "CRC") => ({
+  planned: currency === "USD" ? 0 : planned, actual: null, at: null, note: null, ledgerId: null,
+  ...(currency === "USD" ? { plannedAmount: planned, plannedCurrency: "USD" } : {}),
+});
 
 const incomesFrom = (people = []) => {
   const incomes = {};
@@ -35,8 +40,9 @@ const savingsFrom = (people = [], halves, skipQ1) => {
   const perPerson = {};
   for (const p of people) {
     const planned = Number(p.savingsPerPeriod) || 0;
-    const slots = { q1: savingsSlot(skipQ1 ? 0 : planned) };
-    if (halves.includes(2)) slots.q2 = savingsSlot(planned);
+    const cur = p.savingsCurrency === "USD" ? "USD" : "CRC";
+    const slots = { q1: savingsSlot(skipQ1 ? 0 : planned, cur) };
+    if (halves.includes(2)) slots.q2 = savingsSlot(planned, cur);
     perPerson[p.id] = slots;
   }
   return { perPerson };
@@ -118,7 +124,7 @@ export const materializeMonth = ({
 
   const reserve = reserveBreakdown(annual, monthKey, ledger, venta);
 
-  return withPercentAmounts({
+  return deriveMonth({
     status: "open",
     partial: !!partial,
     startedAt: partial ? startedAt : null,

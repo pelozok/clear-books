@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { savingsPerPeriodCRC } from '../../lib/savings.js'
 import { AmountInput, Field, Segmented } from '../ui/index.js'
 import { contributionFor, periodsToReach } from '../../lib/calculators/savingsGoal.js'
 import { RETENCION_INTERESES, TASAS_REFERENCIA } from '../../lib/constantsCR.js'
@@ -11,7 +12,7 @@ const YESNO = [{ value: true, label: 'Sí' }, { value: false, label: 'No' }]
 
 export default function SavingsGoalTool({ ctx }) {
   const people = ctx.profile?.people || []
-  const defaultContribution = people.reduce((s, p) => s + (Number(p.savingsPerPeriod) || 0), 0) || null
+  const defaultContribution = people.reduce((s, p) => s + savingsPerPeriodCRC(p, ctx.profile?.exchangeRateDefault), 0) || null
   const [goal, setGoal] = useState(null)
   const [initial, setInitial] = useState(Math.round(ctx.totals.totalCRC) || null)
   const [perYear, setPerYear] = useState(ctx.profile?.frequency === 'quincenal' ? 24 : 12)

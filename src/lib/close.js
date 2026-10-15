@@ -156,7 +156,8 @@ const settleUntouched = (month, today, monthKey, autoSavings = {}) => {
         Object.assign(row, { actual: planned, at: today, note: row.note ?? "Apartado automático al cerrar" });
         entries.push({
           id: `${monthKey}-auto-${pid}-${hk}`, date: today, monthKey, half: hk === "q2" ? 2 : 1, personId: pid,
-          placeId: autoSavings[pid], type: "aporte", amount: planned, currency: "CRC",
+          placeId: autoSavings[pid], type: "aporte",
+          ...(row.plannedCurrency === "USD" ? { amount: num(row.plannedAmount), currency: "USD" } : { amount: planned, currency: "CRC" }),
           label: "Ahorro del mes", kind: "planned", reserveId: null, expenseId: null,
         });
       } else {

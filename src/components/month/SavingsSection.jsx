@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Button, Card, Row, RowGroup, StatusPill, useToast } from '../ui/index.js'
-import { fmt } from '../../lib/format.js'
+import { fmt, fmtAmount } from '../../lib/format.js'
 import { halfLabel } from '../../lib/periods.js'
 import { savingsTotals } from '../../lib/savings.js'
 import { clearSavings, confirmSavings } from '../../data/actions/index.js'
@@ -75,11 +75,13 @@ export default function SavingsSection({ hid, me, month, profile, summary, curre
           const auto = (profile?.people || []).find((x) => x.id === row.personId)?.autoSavingsPlaceId
           if (pending && auto) {
             const place = places.find((x) => x.id === auto)
+            const slot = month.savings?.perPerson?.[row.personId]?.[row.half === 2 ? 'q2' : 'q1'] || {}
+            const amt = slot.plannedCurrency === 'USD' ? fmtAmount(slot.plannedAmount, 'USD') : fmt(row.planned)
             return (
               <Row
                 key={key}
                 title={rowTitle(row, profile, frequency)}
-                subtitle={<span className="tnum">{fmt(row.planned)} · se queda en {place?.name || 'tu cuenta'}, se cuenta al cerrar</span>}
+                subtitle={<span className="tnum">{amt} · se queda en {place?.name || 'tu cuenta'}, se cuenta al cerrar</span>}
               />
             )
           }

@@ -115,3 +115,7 @@ export const payrollSavingsCRC = (profile, closedMonthsCount, rate = 1) => {
     return s + toCRC(ps.amount, ps.currency, rate) * months;
   }, 0);
 };
+
+// Ahorro por período de una persona del perfil, en ₡ (si lo define en $, con `rate`).
+export const savingsPerPeriodCRC = (person, rate) =>
+  person?.savingsCurrency === "USD" ? num(person.savingsPerPeriod) * num(rate) : num(person?.savingsPerPeriod);

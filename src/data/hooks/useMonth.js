@@ -7,7 +7,7 @@ import { ensureMonth } from "../ensureMonth.js";
 import { materializeGate } from "../pure/monthOps.js";
 import { todayISO, monthKey } from "../../lib/periods.js";
 import { useLive } from "./useLive.js";
-import { withPercentAmounts } from "../../lib/percent.js";
+import { deriveMonth } from "../../lib/derive.js";
 
 // Devuelve { data, loading, error, tooFar, beforeStart }. data = { id: key, ...mes } | null.
 export function useMonth(hid, key) {
@@ -39,11 +39,11 @@ export function useMonth(hid, key) {
     });
   }, [k, canDecide, tooFar, hid, key]);
 
-  if (tooFar) return { data: withPercentAmounts(live.data?.doc ?? null), loading: false, error: live.error, tooFar: !live.data?.doc, beforeStart: false };
+  if (tooFar) return { data: deriveMonth(live.data?.doc ?? null), loading: false, error: live.error, tooFar: !live.data?.doc, beforeStart: false };
   const own = mat.key === k ? mat : { beforeStart: false, error: null };
   const waiting = missing && !own.beforeStart && !own.error;
   return {
-    data: withPercentAmounts(live.data?.doc ?? null),
+    data: deriveMonth(live.data?.doc ?? null),
     loading: live.loading || waiting,
     error: live.error || own.error,
     tooFar: false,

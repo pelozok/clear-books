@@ -3,7 +3,7 @@ import { getDoc } from "firebase/firestore";
 import { annualRef } from "../db.js";
 import { extraLedgerId, annualPayLedgerId } from "../pure/ids.js";
 import { markFixedItem, upsertById } from "../pure/monthOps.js";
-import { withPercentAmounts } from "../../lib/percent.js";
+import { deriveMonth } from "../../lib/derive.js";
 import { commit, newBatch, touched, assertOpen, monthDoc, setLedger, deleteLedger, todayISO } from "./_common.js";
 
 // Relee el mes (la caché local incluye escrituras pendientes) para que dos acciones
@@ -12,7 +12,7 @@ async function fresh(hid, month) {
   const snap = await getDoc(monthDoc(hid, month)).catch(() => null);
   const cur = snap?.exists() ? { id: month.id, ...snap.data() } : month;
   assertOpen(cur);
-  return withPercentAmounts(cur);
+  return deriveMonth(cur);
 }
 
 const STATUSES = ["pending", "paid", "skipped", "deferred"];
