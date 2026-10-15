@@ -54,11 +54,16 @@ export const leftoverOf = (month, totals = {}) => {
   );
 };
 
+// Lugar donde se queda solo el ahorro de cada persona (perfil: people[].autoSavingsPlaceId).
+// Esas personas no usan el botón Apartar: al cerrar, lo planeado cuenta como apartado.
+export const autoSavingsOf = (profile) =>
+  Object.fromEntries((profile?.people || []).filter((p) => p.autoSavingsPlaceId).map((p) => [p.id, p.autoSavingsPlaceId]));
+
 // Checklist previo al cierre.
-export const closeChecklist = (month, totals = {}) => {
+export const closeChecklist = (month, totals = {}, autoSavings = {}) => {
   const pendingFixed = (month?.fixedItems || []).filter((it) => it.status === "pending");
   const untouchedSavings = monthSavingsSummary(month).rows
-    .filter((r) => r.state === "pending")
+    .filter((r) => r.state === "pending" && !autoSavings[r.personId])
     .map((r) => ({ personId: r.personId, half: r.half }));
   const leftover = leftoverOf(month, totals);
   const deficit = Math.max(0, -leftover);
@@ -138,30 +143,44 @@ const applyFixedDecisions = (month, decisions, today, nextKey) =>
     return { ...it, status: "deferred", deferredTo: nextKey };
   });
 
-// Quincenas sin tocar quedan en 0, sin castigo.
-const zeroUntouched = (month, today) => {
+// Quincenas sin tocar quedan en 0, sin castigo. Si la persona tiene ahorro automático,
+// lo planeado cuenta como apartado en su lugar y se agrega el aporte al libro.
+const settleUntouched = (month, today, monthKey, autoSavings = {}) => {
   const perPerson = cloneSavings(month);
-  for (const halves of Object.values(perPerson)) {
-    for (const row of Object.values(halves)) {
-      if (row.actual == null) Object.assign(row, { actual: 0, at: today, note: row.note ?? "Sin apartar al cerrar" });
+  const entries = [];
+  for (const [pid, halves] of Object.entries(perPerson)) {
+    for (const [hk, row] of Object.entries(halves)) {
+      if (row.actual != null) continue;
+      const planned = num(row.planned);
+      if (autoSavings[pid] && planned > 0) {
+        Object.assign(row, { actual: planned, at: today, note: row.note ?? "Apartado automático al cerrar" });
+        entries.push({
+          id: `${monthKey}-auto-${pid}-${hk}`, date: today, monthKey, half: hk === "q2" ? 2 : 1, personId: pid,
+          placeId: autoSavings[pid], type: "aporte", amount: planned, currency: "CRC",
+          label: "Ahorro del mes", kind: "planned", reserveId: null, expenseId: null,
+        });
+      } else {
+        Object.assign(row, { actual: 0, at: today, note: row.note ?? "Sin apartar al cerrar" });
+      }
     }
   }
-  return { ...(month?.savings || {}), perPerson };
+  return { savings: { ...(month?.savings || {}), perPerson }, entries };
 };
 
 // Cierra el mes. decisions = { fixed: {[id]: 'paid'|'skipped'|'deferred'},
 //   deficitResolution: null | { choice, amount }, leftoverReported: null | number,
 //   destination: 'libre' | 'ahorro', seenBy: ['correo'] }.
 // totals (opcional, de plan.monthTotals) permite guardar leftoverPlanned.
-export const applyClose = ({ month, decisions = {}, today, placeId = null, monthKey: mk, totals = null }) => {
+export const applyClose = ({ month, decisions = {}, today, placeId = null, monthKey: mk, totals = null, autoSavings = {} }) => {
   const monthKey = keyOf(month, mk);
   const nextKey = monthKey ? shiftMonth(monthKey, 1) : null;
+  const settled = settleUntouched(month, today, monthKey, autoSavings);
   let closed = {
     ...month,
     fixedItems: applyFixedDecisions(month, decisions.fixed || {}, today, nextKey),
-    savings: zeroUntouched(month, today),
+    savings: settled.savings,
   };
-  const ledgerEntries = [];
+  const ledgerEntries = [...settled.entries];
 
   // Déficit: se resuelve sobre el mes ya con fijos decididos y ahorro en 0.
   const dr = decisions.deficitResolution;

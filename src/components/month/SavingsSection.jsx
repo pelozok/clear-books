@@ -72,6 +72,17 @@ export default function SavingsSection({ hid, me, month, profile, summary, curre
           const key = `${row.personId}-${row.half}`
           const pending = row.state === 'pending'
           const subtitle = pending ? `${fmt(row.planned)} planeado` : `${fmt(row.actual)} de ${fmt(row.planned)}`
+          const auto = (profile?.people || []).find((x) => x.id === row.personId)?.autoSavingsPlaceId
+          if (pending && auto) {
+            const place = places.find((x) => x.id === auto)
+            return (
+              <Row
+                key={key}
+                title={rowTitle(row, profile, frequency)}
+                subtitle={<span className="tnum">{fmt(row.planned)} · se queda en {place?.name || 'tu cuenta'}, se cuenta al cerrar</span>}
+              />
+            )
+          }
           if (pending && !readOnly) {
             return (
               <Row

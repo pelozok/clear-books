@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { AmountInput, Button, Card, Chip, Field, Input, Segmented, useToast } from '../ui/index.js'
+import { AmountInput, Button, Card, Chip, Field, Input, Segmented, Select, useToast } from '../ui/index.js'
+import { useSavingsPlaces } from '../../data/hooks/index.js'
 import { saveProfile } from '../../data/actions/index.js'
 import Choice from '../onboarding/Choice.jsx'
 import NetSalarySheet from '../onboarding/NetSalarySheet.jsx'
@@ -34,6 +35,7 @@ export default function ProfileSection({ hid, me, profile }) {
     splitRule: profile?.splitRule || 'igual_sobrante',
     people: (profile?.people?.length ? profile.people : [blankPerson(0)]).map((p) => toDraft(p, factorOf(profile?.frequency))),
   }))
+  const places = (useSavingsPlaces(hid).data || []).filter((x) => x.active !== false)
   const [calcFor, setCalcFor] = useState(null)
   const [saving, setSaving] = useState(false)
   const per = d.frequency === 'quincenal' ? 'por quincena' : 'por mes'
@@ -84,6 +86,17 @@ export default function ProfileSection({ hid, me, profile }) {
             </button>
             <Field label={`Ahorro ${per}`}>
               <AmountInput value={p.savingsPerPeriod} currency="CRC" allowCurrencyToggle={false} onChange={({ amount }) => setPerson(i, { savingsPerPeriod: amount })} />
+            </Field>
+            <Field
+              label="Cómo apartás el ahorro"
+              hint={p.autoSavingsPlaceId ? 'Sin botón Apartar: el ahorro se queda en esa cuenta y al cerrar el mes se cuenta solo.' : 'Cada mes tocás Apartar cuando mueves la plata.'}
+            >
+              <Select value={p.autoSavingsPlaceId || ''} onChange={(e) => setPerson(i, { autoSavingsPlaceId: e.target.value || null })}>
+                <option value="">Lo aparto yo (botón Apartar)</option>
+                {places.map((pl) => (
+                  <option key={pl.id} value={pl.id}>Se queda solo en {pl.name}</option>
+                ))}
+              </Select>
             </Field>
             <Chip
               selected={!!p.payrollSavings}

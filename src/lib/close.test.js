@@ -156,3 +156,18 @@ describe("applyClose", () => {
     expect(m.savings.perPerson.p1.q2.actual).toBeNull();
   });
 });
+
+describe("ahorro automático al cerrar", () => {
+  it("cuenta lo planeado como apartado y agrega el aporte al lugar", () => {
+    const m = {
+      id: "2026-10", status: "open", frequency: "mensual", exchangeRate: { venta: 500 },
+      incomes: { p1: { salaryCRC: 0, salaryUSD: 1500 } }, extras: [], fixedItems: [],
+      savings: { perPerson: { p1: { q1: { planned: 150000, actual: null } } } },
+      annualReserve: { quota: 0 }, carryover: { in: 0, out: 0 },
+    };
+    const r = applyClose({ month: m, today: "2026-10-31", autoSavings: { p1: "usd" } });
+    expect(r.month.savings.perPerson.p1.q1).toMatchObject({ actual: 150000, note: "Apartado automático al cerrar" });
+    expect(r.ledgerEntries[0]).toMatchObject({ id: "2026-10-auto-p1-q1", placeId: "usd", type: "aporte", amount: 150000 });
+    expect(closeChecklist(m, {}, { p1: "usd" }).untouchedSavings).toEqual([]);
+  });
+});

@@ -9,7 +9,7 @@ import { errorText, isPareja, useLastPlace } from '../components/month/shared.js
 import { useHousehold } from '../data/HouseholdContext.jsx'
 import { useEntries, useMonth, useSavingsPlaces } from '../data/hooks/index.js'
 import { closeMonth } from '../data/actions/index.js'
-import { applyClose, closeChecklist, resolveDeficit } from '../lib/close.js'
+import { applyClose, autoSavingsOf, closeChecklist, resolveDeficit } from '../lib/close.js'
 import { monthTotals } from '../lib/plan.js'
 import { fmt } from '../lib/format.js'
 import { monthKey as monthKeyOf, monthLabel, todayISO } from '../lib/periods.js'
@@ -46,8 +46,9 @@ export default function ClosePage() {
   const calc = useMemo(() => {
     if (!month || !entries || month.status === 'closed') return null
     const totals = monthTotals(month, undefined, entries)
-    const checklist = closeChecklist(month, totals)
-    const base = applyClose({ month, decisions: { fixed }, today, placeId, totals })
+    const autoSavings = autoSavingsOf(profile)
+    const checklist = closeChecklist(month, totals, autoSavings)
+    const base = applyClose({ month, decisions: { fixed }, today, placeId, totals, autoSavings })
     const planned = base.month.closing.leftoverPlanned ?? 0
     const deficit = Math.max(0, -planned)
     const less = deficit > 0 ? resolveDeficit(base.month, 'less_savings', deficit, { placeId, today }) : null
@@ -61,7 +62,7 @@ export default function ClosePage() {
       destination,
       seenBy,
     }
-    const result = applyClose({ month, decisions, today, placeId: placeId || null, totals })
+    const result = applyClose({ month, decisions, today, placeId: placeId || null, totals, autoSavings })
     return { checklist, planned, deficit, lessCovers, okChoice, result }
   }, [month, entries, fixed, choice, reported, destination, seen, placeId, today, me, profile])
 
