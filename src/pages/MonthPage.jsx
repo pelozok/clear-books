@@ -81,25 +81,35 @@ export default function MonthPage() {
   return (
     <>
       <MonthHeader monthKey={key} hid={hid} me={me} month={month} readOnly={closed} />
+      {/* Móvil: una columna. Escritorio: arriba las tres cifras (te queda, límite, resumen);
+          abajo, a la izquierda lo que se marca (fijos, ahorro) y a la derecha lo que se anota. */}
       <div className="flex flex-col gap-6 pb-16">
         {prevOpen && <CloseBanner prevKey={prevKey} />}
-        {closed ? (
-          <ClosedSummary month={month} profile={profile} savings={d.savings} />
-        ) : (
-          <TeQuedaCard plan={d.plan} profile={profile} month={month} today={today} />
-        )}
-        {!closed && <BudgetCard budget={d.budget} />}
-        <MonthSummaryCard month={month} totals={d.totals} />
-        <SavingsSection {...common} summary={d.savings} currentHalf={currentHalf} ledger={d.ledger} annual={d.annual} />
-        <FixedSection {...common} totals={d.totals} entriesCount={d.entries.length} currentHalf={currentHalf} />
-        <ExtrasSection {...common} />
-        <ReserveSection {...common} />
-        <EntriesSection monthKey={key} profile={profile} entries={d.entries} totals={d.totals} readOnly={closed} />
-        {canClose && (
-          <Button as={Link} to={`/cerrar/${key}`} variant="secondary" full>
-            Cerrar {monthLabel(key).split(' ')[0].toLowerCase()}
-          </Button>
-        )}
+        <div className={`flex flex-col gap-6 lg:grid ${!closed && d.budget?.custom ? 'lg:grid-cols-3' : 'lg:grid-cols-2'} lg:items-stretch [&>*]:lg:h-full`}>
+          {closed ? (
+            <ClosedSummary month={month} profile={profile} savings={d.savings} />
+          ) : (
+            <TeQuedaCard plan={d.plan} profile={profile} month={month} today={today} budget={d.budget} />
+          )}
+          {!closed && <BudgetCard budget={d.budget} />}
+          <MonthSummaryCard month={month} totals={d.totals} />
+        </div>
+        <div className="flex flex-col gap-6 lg:grid lg:grid-cols-2 lg:items-start">
+          <div className="flex flex-col gap-6">
+            <FixedSection {...common} totals={d.totals} entriesCount={d.entries.length} currentHalf={currentHalf} />
+            <SavingsSection {...common} summary={d.savings} currentHalf={currentHalf} ledger={d.ledger} annual={d.annual} />
+            <ReserveSection {...common} />
+            <ExtrasSection {...common} />
+          </div>
+          <div className="flex flex-col gap-6">
+            <EntriesSection monthKey={key} profile={profile} entries={d.entries} totals={d.totals} readOnly={closed} />
+            {canClose && (
+              <Button as={Link} to={`/cerrar/${key}`} variant="secondary" full>
+                Cerrar {monthLabel(key).split(' ')[0].toLowerCase()}
+              </Button>
+            )}
+          </div>
+        </div>
       </div>
       {!closed && <AddEntryFab monthKey={key} />}
     </>

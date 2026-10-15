@@ -1,4 +1,4 @@
-import { BigNumber, Card } from '../ui/index.js'
+import { BigNumber, Card, ProgressBar } from '../ui/index.js'
 import { fmt, fmtAmount, fmtDateLong, fmtRelative } from '../../lib/format.js'
 import { transferToColones } from '../../lib/transfer.js'
 import { halfLabel } from '../../lib/periods.js'
@@ -37,15 +37,15 @@ function TransferNote({ month, personId }) {
   )
 }
 
-function PersonFigure({ row, label, porQuincena, meta, children }) {
+function PersonFigure({ row, label, porQuincena, meta, quincenal, children }) {
   const negative = row.libre < 0
   return (
     <Card>
       <h2 className="text-body text-ink-2">{negative ? `${label.falta} este mes` : `${label.queda} este mes`}</h2>
       <BigNumber amount={Math.abs(row.libre)} tone={negative ? 'bad' : 'ink'} className="mt-1 leading-[1.05]" />
       <p className="tnum mt-2 text-small text-ink-2">
-        {negative ? 'Pasa. Ajustemos: revisá los fijos o el ahorro de este mes.' : `≈ ${fmt(porQuincena)} por quincena`}
-        {meta ? ` · ${meta}` : ''}
+        {negative ? 'Pasa. Ajustemos: revisá los fijos o el ahorro de este mes.' : quincenal ? `≈ ${fmt(porQuincena)} por quincena` : null}
+        {meta ? `${negative || quincenal ? ' · ' : ''}${meta}` : ''}
       </p>
       {children}
     </Card>
@@ -53,7 +53,22 @@ function PersonFigure({ row, label, porQuincena, meta, children }) {
 }
 
 /** La cifra protagonista: "Te queda ₡X este mes", por persona. Sin animación. */
-export default function TeQuedaCard({ plan, profile, month, today }) {
+// Barra de lo gastado contra lo que deja el plan (cuando no hay límite propio, la
+// tarjeta del límite repetiría esta cifra).
+function SpentBar({ budget }) {
+  if (!budget || budget.custom || budget.limit <= 0) return null
+  const tone = { ok: 'accent', near: 'warn', over: 'bad' }[budget.level]
+  return (
+    <div className="mt-4">
+      <ProgressBar value={budget.spent} max={budget.limit} tone={tone} label="Gastado del mes" />
+      <p className={`tnum mt-2 text-small ${budget.level === 'ok' ? 'text-ink-2' : budget.level === 'near' ? 'text-warn' : 'text-bad'}`}>
+        Gastaste {fmt(budget.spent)} de {fmt(budget.limit)}{budget.level === 'near' ? ' · ojo, ya vas por el 80%' : ''}
+      </p>
+    </div>
+  )
+}
+
+export default function TeQuedaCard({ plan, profile, month, today, budget }) {
   const pareja = isPareja(profile) && plan.perPerson.length === 2
   const updated = fmtRelative(month?.updatedAt, today) || 'hoy'
   const meta = [plan.isPartial && plan.since ? `desde el ${fmtDateLong(plan.since)}` : null, `actualizado ${updated}`]
@@ -63,7 +78,8 @@ export default function TeQuedaCard({ plan, profile, month, today }) {
   if (!pareja) {
     const row = plan.perPerson[0] || { libre: 0, porQuincena: 0 }
     return (
-      <PersonFigure row={row} porQuincena={row.porQuincena} meta={meta} label={{ queda: 'Te queda', falta: 'Te falta' }}>
+      <PersonFigure row={row} porQuincena={row.porQuincena} meta={meta} quincenal={month?.frequency === 'quincenal'} label={{ queda: 'Te queda', falta: 'Te falta' }}>
+        <SpentBar budget={budget} />
         {month?.status !== 'closed' && <TransferNote month={month} personId={row.personId} />}
       </PersonFigure>
     )
@@ -88,6 +104,7 @@ export default function TeQuedaCard({ plan, profile, month, today }) {
             key={row.personId}
             row={row}
             porQuincena={row.porQuincena}
+            quincenal={month?.frequency === 'quincenal'}
             meta={i === 0 ? meta : null}
             label={{ queda: `A ${people[i].name} le queda`, falta: `A ${people[i].name} le falta` }}
           />

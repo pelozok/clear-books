@@ -26,7 +26,7 @@ export function CloseBanner({ prevKey }) {
 /** Botón flotante "+" para anotar un gasto. */
 export function AddEntryFab({ monthKey }) {
   return (
-    <div className="pointer-events-none fixed inset-x-0 bottom-[calc(var(--nav-h)+env(safe-area-inset-bottom)+16px)] z-20 lg:bottom-8 lg:pl-side">
+    <div className="pointer-events-none fixed inset-x-0 bottom-[calc(var(--nav-h)+env(safe-area-inset-bottom)+16px)] z-20 lg:hidden">
       <div className="mx-auto flex max-w-3xl justify-end px-gutter">
         <IconButton
           as={Link}

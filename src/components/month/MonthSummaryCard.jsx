@@ -1,7 +1,7 @@
 import { Card, Row, RowGroup } from '../ui/index.js'
 import { fmt, fmtAmount } from '../../lib/format.js'
 
-const usdOf = (crc, rate) => (rate > 0 ? ` (${fmtAmount(crc / rate, 'USD')})` : '')
+const usdOf = (crc, rate) => (rate > 0 ? ` ($${Math.round(crc / rate).toLocaleString('en-US')})` : '')
 
 /** Resumen del mes: lo que entró, en qué se fue y cuánto se ahorró. */
 export default function MonthSummaryCard({ month, totals }) {
