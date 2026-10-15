@@ -1,5 +1,7 @@
 import { BigNumber, Card } from '../ui/index.js'
-import { fmt, fmtDateLong, fmtRelative } from '../../lib/format.js'
+import { fmt, fmtAmount, fmtDateLong, fmtRelative } from '../../lib/format.js'
+import { transferToColones } from '../../lib/transfer.js'
+import { halfLabel } from '../../lib/periods.js'
 import { explainSplit } from '../../lib/split.js'
 import { isPareja, personName } from './shared.js'
 
@@ -16,7 +18,26 @@ const splitResultOf = (plan) => {
   }
 }
 
-function PersonFigure({ row, label, porQuincena, meta }) {
+// Cuánto mover de dólares a colones al cobrar. Lo que queda en dólares es ahorro.
+function TransferNote({ month, personId }) {
+  const rows = transferToColones(month, personId)
+  if (!rows.length) return null
+  const quincenal = rows.length > 1
+  return (
+    <div className="mt-4 border-t border-line pt-3 text-small text-ink-2">
+      <p className="text-body text-ink">Pasá a colones</p>
+      {rows.map((r) => (
+        <p key={r.half} className="tnum mt-1">
+          {quincenal ? `${halfLabel(r.half)}: ` : ''}
+          <span className="font-medium text-ink">{fmtAmount(r.usd, 'USD')}</span> ≈ {fmt(r.crc)}
+        </p>
+      ))}
+      <p className="mt-1">Es tu gasto del mes (fijos en ₡ y día a día). El resto se queda en dólares como ahorro.</p>
+    </div>
+  )
+}
+
+function PersonFigure({ row, label, porQuincena, meta, children }) {
   const negative = row.libre < 0
   return (
     <Card>
@@ -26,6 +47,7 @@ function PersonFigure({ row, label, porQuincena, meta }) {
         {negative ? 'Pasa. Ajustemos: revisá los fijos o el ahorro de este mes.' : `≈ ${fmt(porQuincena)} por quincena`}
         {meta ? ` · ${meta}` : ''}
       </p>
+      {children}
     </Card>
   )
 }
@@ -40,7 +62,11 @@ export default function TeQuedaCard({ plan, profile, month, today }) {
 
   if (!pareja) {
     const row = plan.perPerson[0] || { libre: 0, porQuincena: 0 }
-    return <PersonFigure row={row} porQuincena={row.porQuincena} meta={meta} label={{ queda: 'Te queda', falta: 'Te falta' }} />
+    return (
+      <PersonFigure row={row} porQuincena={row.porQuincena} meta={meta} label={{ queda: 'Te queda', falta: 'Te falta' }}>
+        {month?.status !== 'closed' && <TransferNote month={month} personId={row.personId} />}
+      </PersonFigure>
+    )
   }
 
   const people = plan.perPerson.map((r) => {
