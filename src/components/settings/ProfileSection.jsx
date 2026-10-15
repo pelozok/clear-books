@@ -47,8 +47,8 @@ export default function ProfileSection({ hid, me, profile }) {
   const [apply, setApply] = useState(true)
   const recurring = (useRecurring(hid).data || []).filter((r) => r.active !== false)
   const rate = Number(month?.exchangeRate?.venta) || Number(profile?.exchangeRateDefault) || 0
-  // Sugerencia (regla 50/30/20 con el diezmo aparte): 70% del ingreso para vivir
-  // (necesidades 50% + gustos 20%), menos los fijos que no son % del ingreso.
+  // Sugerencia austera: 30–40% del ingreso para el día a día (se propone 35%), sin
+  // pasar de lo que deja el plan (ingreso − fijos − % del ingreso − ahorro).
   const suggestedLimit = (p) => {
     const f = factorOf(d.frequency)
     const usd = p.incomeCurrency === 'USD'
@@ -56,8 +56,13 @@ export default function ProfileSection({ hid, me, profile }) {
     const fixedCRC = recurring.filter((r) => !(Number(r.percent) > 0))
       .reduce((s, r) => s + (r.currency === 'USD' ? Number(r.amount) * rate : Number(r.amount) || 0), 0)
     const fixed = usd ? (rate > 0 ? fixedCRC / rate : 0) : fixedCRC
-    const v = Math.max(0, income * 0.7 - fixed)
-    return { amount: usd ? Math.round(v) : Math.round(v / 1000) * 1000, currency: usd ? 'USD' : 'CRC' }
+    const pct = recurring.reduce((s, r) => s + (Number(r.percent) > 0 ? Number(r.percent) : 0), 0) / 100
+    const savingsIn = (Number(p.savingsPerPeriod) || 0) * f
+    const savings = p.savingsCurrency === 'USD' ? (usd ? savingsIn : savingsIn * rate) : (usd ? (rate > 0 ? savingsIn / rate : 0) : savingsIn)
+    const cap = Math.max(0, income * (1 - pct) - fixed - savings)
+    const round = (v) => (usd ? Math.round(v / 10) * 10 : Math.round(v / 5000) * 5000)
+    const at = (k) => round(Math.min(cap, income * k))
+    return { amount: at(0.35), low: at(0.3), high: at(0.4), currency: usd ? 'USD' : 'CRC' }
   }
   const [calcFor, setCalcFor] = useState(null)
   const [saving, setSaving] = useState(false)
@@ -129,11 +134,12 @@ export default function ProfileSection({ hid, me, profile }) {
               return (
                 <div className="rounded-xl bg-surface-2 p-3 text-small text-ink-2">
                   <p>
-                    <span className="font-medium text-ink">Sugerido: <span className="tnum">{fmtAmount(s.amount, s.currency)}</span> al mes.</span>{' '}
-                    Regla 50/30/20 (Elizabeth Warren): 50% necesidades, 30% gustos, 20% ahorro. Con el diezmo aparte, queda un 70% para vivir; a eso se le restan tus fijos (celular, seguro…). Es una guía, no un estudio exacto.
+                    <span className="font-medium text-ink">Sugerido: <span className="tnum">{fmtAmount(s.amount, s.currency)}</span> al mes</span>{' '}
+                    <span className="tnum">(entre {fmtAmount(s.low, s.currency)} y {fmtAmount(s.high, s.currency)}, 30–40% del ingreso).</span>{' '}
+                    Criterio austero: el día a día no pasa de un tercio de lo que ganás; diezmo, fijos y ahorro van aparte, y lo que no gastes lo pasás al ahorro al cerrar el mes.
                   </p>
                   <button type="button" className="mt-2 font-medium text-accent underline" onClick={() => setPerson(i, { spendLimit: s.amount, spendLimitCurrency: s.currency })}>
-                    Usar el sugerido
+                    Usar {fmtAmount(s.amount, s.currency)}
                   </button>
                 </div>
               )
