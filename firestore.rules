@@ -20,7 +20,14 @@ service cloud.firestore {
     // al hogar del dueño, pero sí para tener un perfil propio con partnerOf.
     function isAllowed() {
       return request.auth != null
-        && request.auth.token.email in ['kevindp2008@gmail.com'];
+        && request.auth.token.email in [
+             'kevindp2008@gmail.com',
+             'astridfatjo@gmail.com',
+             'viviretamar00@gmail.com',
+             'dpelozof@gmail.com',
+             'cammpelozo@gmail.com',
+             'katheryn.b.pelozo@gmail.com'
+           ];
     }
 
     match /users/{uid}/{document=**} {
