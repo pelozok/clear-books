@@ -30,6 +30,7 @@ export function monthRows(closed, ledger, rate) {
       key: m.id,
       partial: !!m.partial,
       leftover: m.closing?.leftoverReported ?? m.closing?.leftoverPlanned ?? 0,
+      spent: m.closing?.spent ?? null,
       saved: sav.actual,
       planned: sav.planned,
       withdrawn: outs.reduce((s, e) => s + toCRC(e.amount, e.currency, rate), 0),

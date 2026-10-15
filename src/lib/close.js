@@ -210,8 +210,10 @@ export const applyClose = ({ month, decisions = {}, today, placeId = null, month
   }
 
   closed.status = "closed";
+  // Gastado en el mes (₡): fijos pagados + variables + extras de gasto de la cuenta.
+  const spent = totals ? fixedCommittedCRC(closed) + num(totals.variable) + num(totals.extrasOut) : null;
   closed.closing = {
-    closedAt: today, leftoverPlanned, leftoverReported, unlogged, deficitResolution, destination,
+    closedAt: today, spent, leftoverPlanned, leftoverReported, unlogged, deficitResolution, destination,
     seenBy: decisions.seenBy || [],
   };
   const nextCarryIn = deficitResolution === "carry" ? num(closed.carryover?.out) : 0;

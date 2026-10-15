@@ -21,6 +21,11 @@ export default function MonthHistoryList({ rows, couple }) {
               </h3>
               <span className={cx('shrink-0 text-small font-medium', TONE[r.result.tone])}>{r.result.text}</span>
             </div>
+            {r.spent != null && (
+              <p className="mt-1 text-body text-ink">
+                {couple ? 'Gastaron' : 'Gastaste'} <span className="tnum font-medium">{fmt(r.spent)}</span>
+              </p>
+            )}
             <p className="mt-1 text-body text-ink">
               {v.end} <span className="tnum font-medium">{fmt(r.leftover)}</span>
             </p>

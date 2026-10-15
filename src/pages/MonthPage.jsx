@@ -4,6 +4,7 @@ import { Button, EmptyState } from '../components/ui/index.js'
 import MonthSkeleton from '../components/layout/MonthSkeleton.jsx'
 import MonthHeader from '../components/month/MonthHeader.jsx'
 import TeQuedaCard from '../components/month/TeQuedaCard.jsx'
+import MonthSummaryCard from '../components/month/MonthSummaryCard.jsx'
 import SavingsSection from '../components/month/SavingsSection.jsx'
 import FixedSection from '../components/month/FixedSection.jsx'
 import ExtrasSection from '../components/month/ExtrasSection.jsx'
@@ -86,6 +87,7 @@ export default function MonthPage() {
         ) : (
           <TeQuedaCard plan={d.plan} profile={profile} month={month} today={today} />
         )}
+        <MonthSummaryCard month={month} totals={d.totals} />
         <SavingsSection {...common} summary={d.savings} currentHalf={currentHalf} ledger={d.ledger} annual={d.annual} />
         <FixedSection {...common} totals={d.totals} entriesCount={d.entries.length} currentHalf={currentHalf} />
         <ExtrasSection {...common} />
