@@ -1,6 +1,7 @@
 // Helpers puros de la capa de datos (sin Firebase): edición de arrays del mes,
 // límites de materialización y serialización para respaldos.
 import { shiftMonth } from "../../lib/periods.js";
+import { savingsPlanOf } from "../../lib/materialize.js";
 
 // ¿Se puede materializar `key`? Nunca más allá del mes actual + 1, ni antes del arranque.
 // Devuelve 'ok' | 'tooFar' | 'beforeStart'.
@@ -75,4 +76,24 @@ export const toPlain = (v) => {
     return out;
   }
   return v;
+};
+
+// Lleva ingreso y ahorro del perfil al mes abierto. El ahorro solo cambia en los
+// slots sin confirmar (y no revive una 1ra quincena que quedó en 0 por arranque parcial).
+export const profileToMonthPatch = (month, people = []) => {
+  const incomes = { ...(month?.incomes || {}) };
+  const perPerson = {};
+  for (const [pid, halves] of Object.entries(month?.savings?.perPerson || {})) {
+    perPerson[pid] = {};
+    for (const [hk, row] of Object.entries(halves || {})) perPerson[pid][hk] = { ...row };
+  }
+  for (const p of people) {
+    incomes[p.id] = { salaryCRC: Number(p.incomeCRC) || 0, salaryUSD: Number(p.incomeUSD) || 0 };
+    for (const [hk, row] of Object.entries(perPerson[p.id] || {})) {
+      if (row.actual != null) continue;
+      if (month?.partial && hk === "q1" && !row.planned && !row.plannedAmount) continue;
+      Object.assign(row, savingsPlanOf(p));
+    }
+  }
+  return { incomes, savings: { ...(month?.savings || {}), perPerson } };
 };

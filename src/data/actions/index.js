@@ -1,4 +1,4 @@
-export { createProfile, saveProfile } from "./profile.js";
+export { createProfile, saveProfile, applyProfileToMonth } from "./profile.js";
 export {
   addRecurring, updateRecurring, removeRecurring, applyToCurrentMonth,
   addAnnual, updateAnnual, removeAnnual, addPlace, updatePlace, removePlace,

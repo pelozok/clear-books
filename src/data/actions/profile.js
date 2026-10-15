@@ -2,7 +2,8 @@
 import { setDoc } from "firebase/firestore";
 import { profileRef, placeRef, recurringRef, annualRef, placesCol, recurringCol, annualCol, newId } from "../db.js";
 import { ensureMonth } from "../ensureMonth.js";
-import { commit, newBatch, created, touched, todayISO, monthOf } from "./_common.js";
+import { commit, newBatch, created, touched, todayISO, monthOf, assertOpen, monthDoc } from "./_common.js";
+import { profileToMonthPatch } from "../pure/monthOps.js";
 
 // Onboarding. data = { profile, recurring: [], annual: [], places: [], today? }.
 // Crea todo en un batch y materializa el mes actual (parcial si no arranca el día 1).
@@ -53,3 +54,11 @@ export async function createProfile(hid, me, { profile, recurring = [], annual =
 // updateMonthField / applyToCurrentMonth.
 export const saveProfile = (hid, me, patch) =>
   setDoc(profileRef(hid), { ...patch, ...touched() }, { merge: true });
+
+// Aplica ingreso y ahorro del perfil al mes abierto.
+export async function applyProfileToMonth(hid, me, month, people) {
+  assertOpen(month);
+  const batch = newBatch();
+  batch.update(monthDoc(hid, month), { ...profileToMonthPatch(month, people), ...touched() });
+  await commit(batch);
+}

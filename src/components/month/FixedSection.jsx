@@ -19,13 +19,17 @@ const groupsOf = (items, frequency, currentHalf) => {
   return groups.filter((g) => g.items.length)
 }
 
-const subtitleOf = (it) => {
+// Monto con su equivalente en colones si está en dólares: "$150 (₡76.500)".
+const amountOf = (amount, currency, rate) =>
+  currency === 'USD' && rate > 0 ? `${fmtAmount(amount, 'USD')} (${fmt(amount * rate)})` : fmtAmount(amount, currency)
+
+const subtitleOf = (it, rate) => {
   const parts = []
   if (it.status === 'paid') {
-    parts.push(fmtAmount(it.paidAmount ?? it.amount, it.currency))
+    parts.push(amountOf(it.paidAmount ?? it.amount, it.currency, rate))
     if (it.paidAt) parts.push(`pagado ${fmtDate(it.paidAt)}`)
   } else {
-    parts.push(fmtAmount(it.amount, it.currency))
+    parts.push(amountOf(it.amount, it.currency, rate))
   }
   if (it.percent > 0) parts.push(`${it.percent}% del ingreso`)
   if (it.fromMonth) parts.push(`viene de ${monthLabel(it.fromMonth).split(' ')[0].toLowerCase()}`)
@@ -75,7 +79,7 @@ export default function FixedSection({ hid, me, month, totals, entriesCount, cur
               <Row
                 key={it.id}
                 title={it.name}
-                subtitle={<span className="tnum">{subtitleOf(it)}</span>}
+                subtitle={<span className="tnum">{subtitleOf(it, Number(month.exchangeRate?.venta) || 0)}</span>}
                 onClick={readOnly ? undefined : () => { setItem(it); setVisible(true) }}
                 trailing={<StatusPill state={PILL[it.status] || 'pending'} label={PILL_LABEL[it.status]} />}
               />

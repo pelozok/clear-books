@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { materializeGate, applyTemplateToFixed, markFixedItem, upsertById, toPlain } from "./monthOps.js";
+import { materializeGate, applyTemplateToFixed, markFixedItem, upsertById, toPlain, profileToMonthPatch } from "./monthOps.js";
 
 const tpl = { id: "r1", name: "Alquiler", amount: 350000, currency: "CRC", half: 1, active: true };
 
@@ -52,5 +52,15 @@ describe("upsertById / toPlain", () => {
   it("convierte Timestamps", () => {
     const ts = { toDate: () => new Date("2026-10-15T12:00:00Z") };
     expect(toPlain({ a: [ts], b: 1 })).toEqual({ a: ["2026-10-15T12:00:00.000Z"], b: 1 });
+  });
+});
+
+describe("profileToMonthPatch", () => {
+  it("pasa ingreso y ahorro en dólares al mes, sin tocar lo confirmado", () => {
+    const month = { incomes: { p1: { salaryCRC: 900000, salaryUSD: 0 } }, savings: { perPerson: { p1: { q1: { planned: 50000, actual: null }, q2: { planned: 50000, actual: 50000 } } } } };
+    const out = profileToMonthPatch(month, [{ id: "p1", incomeCRC: 0, incomeUSD: 1500, savingsPerPeriod: 300, savingsCurrency: "USD" }]);
+    expect(out.incomes.p1).toEqual({ salaryCRC: 0, salaryUSD: 1500 });
+    expect(out.savings.perPerson.p1.q1).toMatchObject({ plannedAmount: 300, plannedCurrency: "USD", actual: null });
+    expect(out.savings.perPerson.p1.q2).toMatchObject({ planned: 50000, actual: 50000 });
   });
 });

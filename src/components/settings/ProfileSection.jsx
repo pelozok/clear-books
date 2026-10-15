@@ -1,7 +1,10 @@
 import { useState } from 'react'
 import { AmountInput, Button, Card, Chip, Field, Input, Segmented, Select, useToast } from '../ui/index.js'
 import { useSavingsPlaces } from '../../data/hooks/index.js'
-import { saveProfile } from '../../data/actions/index.js'
+import { applyProfileToMonth, saveProfile } from '../../data/actions/index.js'
+import { useMonth } from '../../data/hooks/index.js'
+import { monthKey, monthLabel, todayISO } from '../../lib/periods.js'
+import { CheckRow } from '../onboarding/Choice.jsx'
 import Choice from '../onboarding/Choice.jsx'
 import NetSalarySheet from '../onboarding/NetSalarySheet.jsx'
 
@@ -37,6 +40,10 @@ export default function ProfileSection({ hid, me, profile }) {
     people: (profile?.people?.length ? profile.people : [blankPerson(0)]).map((p) => toDraft(p, factorOf(profile?.frequency))),
   }))
   const places = (useSavingsPlaces(hid).data || []).filter((x) => x.active !== false)
+  const curKey = monthKey(todayISO())
+  const { data: month } = useMonth(hid, curKey)
+  const canApply = !!month && month.status !== 'closed'
+  const [apply, setApply] = useState(false)
   const [calcFor, setCalcFor] = useState(null)
   const [saving, setSaving] = useState(false)
   const per = d.frequency === 'quincenal' ? 'por quincena' : 'por mes'
@@ -51,8 +58,10 @@ export default function ProfileSection({ hid, me, profile }) {
   const save = async () => {
     setSaving(true)
     try {
-      await saveProfile(hid, me, { mode: d.mode, frequency: d.frequency, splitRule: d.splitRule, people: visible.map((p) => fromDraft(p, factorOf(d.frequency))) })
-      toast.success('Perfil guardado. Aplica desde el próximo mes.')
+      const people = visible.map((p) => fromDraft(p, factorOf(d.frequency)))
+      await saveProfile(hid, me, { mode: d.mode, frequency: d.frequency, splitRule: d.splitRule, people })
+      if (apply && canApply) await applyProfileToMonth(hid, me, month, people)
+      toast.success(apply && canApply ? 'Perfil guardado, también en el mes en curso.' : 'Perfil guardado. Aplica desde el próximo mes.')
     } catch (e) {
       toast.error(`No se pudo guardar: ${e.message || e}`)
     } finally {
@@ -141,6 +150,14 @@ export default function ProfileSection({ hid, me, profile }) {
       )}
 
       <div className="space-y-2">
+        {canApply && (
+          <CheckRow
+            checked={apply}
+            onChange={setApply}
+            label={`Aplicar ingreso y ahorro al mes en curso (${monthLabel(curKey)})`}
+            hint="El ahorro que ya confirmaste no se toca. La frecuencia sigue cambiando desde el mes que viene."
+          />
+        )}
         <Button full loading={saving} disabled={!valid} onClick={save}>
           Guardar perfil
         </Button>

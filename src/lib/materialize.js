@@ -19,6 +19,14 @@ const halfOf = (iso) => (parseInt(iso.slice(8, 10), 10) <= 15 ? 1 : 2);
 // Quita un sufijo "(de septiembre)" previo para no encadenar al diferir dos veces.
 const baseName = (name = "") => name.replace(/\s*\(de [a-záéíóú]+\)\s*$/i, "");
 
+// Campos del plan de ahorro de una persona del perfil para un slot del mes.
+export const savingsPlanOf = (p) => {
+  const amt = Number(p?.savingsPerPeriod) || 0;
+  return p?.savingsCurrency === "USD"
+    ? { planned: 0, plannedAmount: amt, plannedCurrency: "USD" }
+    : { planned: amt, plannedAmount: null, plannedCurrency: null };
+};
+
 // planned siempre en ₡; si el ahorro se define en $, plannedAmount/plannedCurrency lo guardan
 // y deriveMonth recalcula planned con el TC del mes.
 const savingsSlot = (planned, currency = "CRC") => ({
