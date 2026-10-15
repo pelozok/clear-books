@@ -2,6 +2,7 @@
 // la plantilla de fijos, las reservas anuales y el mes anterior. Función pura:
 // no toca Firestore ni lee la fecha del sistema (recibe `today`).
 import { reserveBreakdown } from "./reserve.js";
+import { withPercentAmounts } from "./percent.js";
 
 const MESES_MIN = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
 const pad = (n) => String(n).padStart(2, "0");
@@ -61,6 +62,7 @@ const fixedFromTemplate = (recurring = [], monthKey, skipHalf1) =>
       paidAmount: null,
       deferredTo: null,
       isDebt: !!r.isDebt,
+      percent: Number(r.percent) > 0 ? Number(r.percent) : null,
     }));
 
 // Fijos que el mes anterior dejó como 'deferred': entran con `fromMonth` y el
@@ -116,7 +118,7 @@ export const materializeMonth = ({
 
   const reserve = reserveBreakdown(annual, monthKey, ledger, venta);
 
-  return {
+  return withPercentAmounts({
     status: "open",
     partial: !!partial,
     startedAt: partial ? startedAt : null,
@@ -135,5 +137,5 @@ export const materializeMonth = ({
     closing: null,
     createdAt: today,
     updatedAt: today,
-  };
+  });
 };

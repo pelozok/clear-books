@@ -27,6 +27,7 @@ const subtitleOf = (it) => {
   } else {
     parts.push(fmtAmount(it.amount, it.currency))
   }
+  if (it.percent > 0) parts.push(`${it.percent}% del ingreso`)
   if (it.fromMonth) parts.push(`viene de ${monthLabel(it.fromMonth).split(' ')[0].toLowerCase()}`)
   return parts.join(' · ')
 }

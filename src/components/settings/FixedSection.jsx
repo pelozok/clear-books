@@ -9,7 +9,12 @@ import { HALF_OPTIONS } from '../onboarding/defaults.js'
 import { CheckRow } from '../onboarding/Choice.jsx'
 import CrudList from './CrudList.jsx'
 
-const BLANK = { name: '', amount: null, currency: 'CRC', half: 1, isDebt: false, cuotasRestantes: null }
+const BLANK = { name: '', amount: null, currency: 'CRC', half: 1, isDebt: false, cuotasRestantes: null, percent: null }
+const KIND_OPTIONS = [
+  { value: 'monto', label: 'Monto fijo' },
+  { value: 'percent', label: '% del ingreso' },
+]
+const isPercent = (r) => Number(r?.percent) > 0
 
 export default function FixedSection({ hid, me, profile }) {
   const toast = useToast()
@@ -24,11 +29,11 @@ export default function FixedSection({ hid, me, profile }) {
   const [busy, setBusy] = useState(false)
 
   const open = (item) => {
-    setEdit(item ? { ...item } : { ...BLANK, order: items.length })
+    setEdit(item ? { ...item, kind: isPercent(item) ? 'percent' : 'monto' } : { ...BLANK, kind: 'monto', order: items.length })
     setApply(false)
   }
   const patch = (p) => setEdit((e) => ({ ...e, ...p }))
-  const valid = edit && edit.name.trim() && Number(edit.amount) > 0
+  const valid = edit && edit.name.trim() && (edit.kind === 'percent' ? Number(edit.percent) > 0 && Number(edit.percent) <= 100 : Number(edit.amount) > 0)
 
   const run = async (fn, msg) => {
     setBusy(true)
@@ -45,8 +50,10 @@ export default function FixedSection({ hid, me, profile }) {
 
   const save = () =>
     run(async () => {
+      const pct = edit.kind === 'percent'
       const item = {
-        name: edit.name.trim(), amount: Number(edit.amount), currency: edit.currency,
+        name: edit.name.trim(), amount: pct ? 0 : Number(edit.amount), currency: edit.currency,
+        percent: pct ? Number(edit.percent) : null,
         half: quincenal ? edit.half : edit.half ?? 1, isDebt: !!edit.isDebt,
         cuotasRestantes: edit.isDebt && Number(edit.cuotasRestantes) > 0 ? Number(edit.cuotasRestantes) : null,
         order: edit.order ?? 0,
@@ -79,7 +86,7 @@ export default function FixedSection({ hid, me, profile }) {
             onClick={() => open(r)}
             title={r.name}
             subtitle={[quincenal ? halfLabel(r.half) : null, r.isDebt ? `Deuda${r.cuotasRestantes ? `, ${r.cuotasRestantes} cuotas` : ''}` : null].filter(Boolean).join(' · ') || undefined}
-            trailing={<span className="tnum">{fmtAmount(r.amount, r.currency)}</span>}
+            trailing={<span className="tnum">{isPercent(r) ? `${r.percent}% del ingreso` : fmtAmount(r.amount, r.currency)}</span>}
           />
         ))}
       </CrudList>
@@ -100,9 +107,23 @@ export default function FixedSection({ hid, me, profile }) {
             <Field label="Nombre">
               <Input value={edit.name} onChange={(e) => patch({ name: e.target.value })} />
             </Field>
-            <Field label="Monto al mes">
-              <AmountInput value={edit.amount} currency={edit.currency} onChange={({ amount, currency }) => patch({ amount, currency })} />
+            <Field label="Cómo se calcula">
+              <Segmented options={KIND_OPTIONS} value={edit.kind} onChange={(kind) => patch({ kind })} />
             </Field>
+            {edit.kind === 'percent' ? (
+              <>
+                <Field label="Porcentaje" hint="Se calcula cada mes sobre tu salario más los ingresos extra (aguinaldo, bonos). Ej: diezmo 10%.">
+                  <Input type="number" inputMode="decimal" min="0" max="100" step="0.5" value={edit.percent ?? ''} onChange={(e) => patch({ percent: e.target.value })} />
+                </Field>
+                <Field label="Moneda en que lo pagás">
+                  <Segmented options={[{ value: 'CRC', label: '₡' }, { value: 'USD', label: '$' }]} value={edit.currency} onChange={(currency) => patch({ currency })} />
+                </Field>
+              </>
+            ) : (
+              <Field label="Monto al mes">
+                <AmountInput value={edit.amount} currency={edit.currency} onChange={({ amount, currency }) => patch({ amount, currency })} />
+              </Field>
+            )}
             {quincenal && (
               <Field label="Quincena" hint={edit.half === 'ambas' ? 'La mitad en cada quincena.' : undefined}>
                 <Segmented options={HALF_OPTIONS} value={edit.half} onChange={(half) => patch({ half })} />

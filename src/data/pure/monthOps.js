@@ -27,6 +27,7 @@ export const applyTemplateToFixed = (fixedItems = [], r, monthKey) => {
       currency: r.currency || "CRC",
       half: r.half ?? 1,
       isDebt: !!r.isDebt,
+      percent: Number(r.percent) > 0 ? Number(r.percent) : null,
     };
     return items;
   }
@@ -35,6 +36,7 @@ export const applyTemplateToFixed = (fixedItems = [], r, monthKey) => {
     id: `${r.id}_${monthKey}`, templateId: r.id, fromMonth: null, name: r.name,
     amount: Number(r.amount) || 0, currency: r.currency || "CRC", half: r.half ?? 1,
     status: "pending", paidAt: null, paidAmount: null, deferredTo: null, isDebt: !!r.isDebt,
+    percent: Number(r.percent) > 0 ? Number(r.percent) : null,
   });
   return items;
 };
