@@ -5,12 +5,21 @@ import { extraLedgerId, annualPayLedgerId } from "../pure/ids.js";
 import { markFixedItem, upsertById } from "../pure/monthOps.js";
 import { commit, newBatch, touched, assertOpen, monthDoc, setLedger, deleteLedger, todayISO } from "./_common.js";
 
+// Relee el mes (la caché local incluye escrituras pendientes) para que dos acciones
+// seguidas sobre el mismo mes no se pisen al reescribir fixedItems/extras.
+async function fresh(hid, month) {
+  const snap = await getDoc(monthDoc(hid, month)).catch(() => null);
+  const cur = snap?.exists() ? { id: month.id, ...snap.data() } : month;
+  assertOpen(cur);
+  return cur;
+}
+
 const STATUSES = ["pending", "paid", "skipped", "deferred"];
 const EDITABLE = ["incomes", "exchangeRate", "savings", "splitRule", "annualReserve.quota"];
 
 // Cambia el estado de un fijo. patch = { status, paidAmount?, paidAt? }.
-export async function markFixed(hid, me, month, itemId, patch) {
-  assertOpen(month);
+export async function markFixed(hid, me, monthArg, itemId, patch) {
+  const month = await fresh(hid, monthArg);
   if (!STATUSES.includes(patch?.status)) throw new Error(`Estado inválido: ${patch?.status}`);
   const fixedItems = markFixedItem(month.fixedItems || [], itemId, patch, month.id, todayISO());
   const batch = newBatch();
@@ -19,8 +28,8 @@ export async function markFixed(hid, me, month, itemId, patch) {
 }
 
 // Edita un fijo del mes (monto, nombre, quincena…) o lo agrega si el id no existe.
-export async function updateFixedItem(hid, me, month, item) {
-  assertOpen(month);
+export async function updateFixedItem(hid, me, monthArg, item) {
+  const month = await fresh(hid, monthArg);
   const base = { templateId: null, fromMonth: null, currency: "CRC", half: 1, status: "pending", paidAt: null, paidAmount: null, deferredTo: null, isDebt: false };
   const exists = (month.fixedItems || []).some((x) => x.id === item.id);
   const fixedItems = upsertById(month.fixedItems || [], exists ? item : { ...base, ...item });
@@ -41,8 +50,8 @@ export async function updateMonthField(hid, me, month, path, value) {
 
 // Agrega (o reemplaza por id) un extra. Con source 'ahorro' crea el retiro enlazado
 // desde extra.placeId. Devuelve el id del extra.
-export async function addExtra(hid, me, month, extra) {
-  assertOpen(month);
+export async function addExtra(hid, me, monthArg, extra) {
+  const month = await fresh(hid, monthArg);
   const id = extra.id || `x${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
   const lid = extraLedgerId(hid, month.id, id);
   const fromSavings = extra.source === "ahorro";
@@ -66,8 +75,8 @@ export async function addExtra(hid, me, month, extra) {
   return id;
 }
 
-export async function removeExtra(hid, me, month, extraId) {
-  assertOpen(month);
+export async function removeExtra(hid, me, monthArg, extraId) {
+  const month = await fresh(hid, monthArg);
   const ex = (month.extras || []).find((x) => x.id === extraId);
   const batch = newBatch();
   if (ex?.ledgerId) deleteLedger(batch, hid, ex.ledgerId);
@@ -78,8 +87,8 @@ export async function removeExtra(hid, me, month, extraId) {
 // Paga una reserva anual: extra 'gasto' con reserveId. fromSavings: el pago sale del
 // ahorro (retiro etiquetado kind 'reserve_pay' que baja el apartado de esa reserva).
 // data = { annualId, amount, currency?, date?, fromSavings?, placeId?, label? }.
-export async function payAnnual(hid, me, month, { annualId, amount, currency = "CRC", date = todayISO(), fromSavings = false, placeId = null, label }) {
-  assertOpen(month);
+export async function payAnnual(hid, me, monthArg, { annualId, amount, currency = "CRC", date = todayISO(), fromSavings = false, placeId = null, label }) {
+  const month = await fresh(hid, monthArg);
   const snap = await getDoc(annualRef(hid, annualId)).catch(() => null);
   const name = label || (snap?.exists() ? snap.data().name : "Reserva anual");
   const id = `annual-${annualId}`;
