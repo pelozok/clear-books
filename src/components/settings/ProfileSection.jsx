@@ -97,6 +97,18 @@ export default function ProfileSection({ hid, me, profile }) {
             <Field label={`Ahorro ${per}`}>
               <AmountInput value={p.savingsPerPeriod} currency={p.savingsCurrency || 'CRC'} onChange={({ amount, currency }) => setPerson(i, { savingsPerPeriod: amount, savingsCurrency: currency })} />
             </Field>
+            {d.mode !== 'pareja' && (
+              <Field
+                label="Límite de gasto del día a día por mes (opcional)"
+                hint={p.spendLimit > 0 ? 'Te aviso cuando llegués al 80%.' : 'Vacío: el límite es lo que deja tu plan (ingreso − fijos − ahorro). Te aviso al llegar al 80%.'}
+              >
+                <AmountInput
+                  value={p.spendLimit || null}
+                  currency={p.spendLimitCurrency || 'CRC'}
+                  onChange={({ amount, currency }) => setPerson(i, { spendLimit: amount || null, spendLimitCurrency: currency })}
+                />
+              </Field>
+            )}
             <Field
               label="Cómo apartás el ahorro"
               hint={p.autoSavingsPlaceId ? 'Sin botón Apartar: el ahorro se queda en esa cuenta y al cerrar el mes se cuenta solo.' : 'Cada mes tocás Apartar cuando mueves la plata.'}

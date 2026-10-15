@@ -7,6 +7,8 @@ import { errorText, isPareja, setLastCategory } from '../components/month/shared
 import { useHousehold } from '../data/HouseholdContext.jsx'
 import { useEntries, useMonth, useSavingsPlaces } from '../data/hooks/index.js'
 import { addEntry, removeEntry, updateEntry } from '../data/actions/index.js'
+import { budgetMessage, spendBudget } from '../lib/budget.js'
+import { monthTotals } from '../lib/plan.js'
 import { defaultDateFor, monthKey as monthKeyOf, monthLabel, todayISO } from '../lib/periods.js'
 import { teQueda } from '../lib/plan.js'
 import { fmt } from '../lib/format.js'
@@ -49,6 +51,15 @@ export default function NewEntryPage() {
   const goBack = () => (window.history.state?.idx > 0 ? navigate(-1) : navigate(back, { replace: true }))
   const header = <PageHeader title={id ? 'Editar gasto' : 'Anotar gasto'} back={back} />
 
+  // Después de anotar: en individual avisa contra el límite del mes; en pareja, "Les quedan".
+  const notify = (verb, nextList) => {
+    const plan = teQueda({ month: month.data, profile, entries: nextList, today })
+    const b = spendBudget({ month: month.data, profile, plan, totals: monthTotals(month.data, undefined, nextList) })
+    if (b && b.limit > 0 && b.level !== 'ok') toast.error(`${verb} · Ojo, ${budgetMessage(b, fmt).replace(/^Te/, 'te')}`)
+    else if (b && b.limit > 0) toast.success(`${verb} · ${budgetMessage(b, fmt)}`)
+    else toast.success(`${verb} · ${leftMessage(nextList)}`)
+  }
+
   const leftMessage = (nextList) => {
     const plan = teQueda({ month: month.data, profile, entries: nextList, today })
     const verb = isPareja(profile) ? 'Les quedan' : 'Te quedan'
@@ -62,10 +73,10 @@ export default function NewEntryPage() {
     try {
       if (entry) {
         await updateEntry(hid, me, entry, payload, rate)
-        toast.success(`Guardado · ${leftMessage(list.map((e) => (e.id === entry.id ? { ...e, ...payload } : e)))}`)
+        notify('Guardado', list.map((e) => (e.id === entry.id ? { ...e, ...payload } : e)))
       } else {
         await addEntry(hid, me, payload, rate)
-        toast.success(`Anotado · ${leftMessage([...list, payload])}`)
+        notify('Anotado', [...list, payload])
       }
       setLastCategory(data.categoryId)
       goBack()

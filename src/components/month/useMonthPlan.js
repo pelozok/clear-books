@@ -3,6 +3,7 @@ import { useMemo } from 'react'
 import { useHousehold } from '../../data/HouseholdContext.jsx'
 import { useAnnual, useEntries, useLedger, useMonth, useMonthsIndex, useSavingsPlaces } from '../../data/hooks/index.js'
 import { monthTotals, teQueda } from '../../lib/plan.js'
+import { spendBudget } from '../../lib/budget.js'
 import { monthSavingsSummary } from '../../lib/savings.js'
 import { todayISO } from '../../lib/periods.js'
 
@@ -20,9 +21,12 @@ export function useMonthPlan(key) {
   const list = useMemo(() => entries.data || [], [entries.data])
   const derived = useMemo(() => {
     if (!doc) return null
+    const plan = teQueda({ month: doc, profile, entries: list, today })
+    const totals = monthTotals(doc, undefined, list)
     return {
-      plan: teQueda({ month: doc, profile, entries: list, today }),
-      totals: monthTotals(doc, undefined, list),
+      plan,
+      totals,
+      budget: spendBudget({ month: doc, profile, plan, totals }),
       savings: monthSavingsSummary(doc),
     }
   }, [doc, profile, list, today])
