@@ -2,7 +2,8 @@ import { useState } from 'react'
 import { AmountInput, Button, Card, Chip, Field, Input, Segmented, Select, useToast } from '../ui/index.js'
 import { useSavingsPlaces } from '../../data/hooks/index.js'
 import { applyProfileToMonth, saveProfile } from '../../data/actions/index.js'
-import { useMonth } from '../../data/hooks/index.js'
+import { useMonth, useRecurring } from '../../data/hooks/index.js'
+import { fmtAmount } from '../../lib/format.js'
 import { monthKey, monthLabel, todayISO } from '../../lib/periods.js'
 import { CheckRow } from '../onboarding/Choice.jsx'
 import Choice from '../onboarding/Choice.jsx'
@@ -43,7 +44,21 @@ export default function ProfileSection({ hid, me, profile }) {
   const curKey = monthKey(todayISO())
   const { data: month } = useMonth(hid, curKey)
   const canApply = !!month && month.status !== 'closed'
-  const [apply, setApply] = useState(false)
+  const [apply, setApply] = useState(true)
+  const recurring = (useRecurring(hid).data || []).filter((r) => r.active !== false)
+  const rate = Number(month?.exchangeRate?.venta) || Number(profile?.exchangeRateDefault) || 0
+  // Sugerencia (regla 50/30/20 con el diezmo aparte): 70% del ingreso para vivir
+  // (necesidades 50% + gustos 20%), menos los fijos que no son % del ingreso.
+  const suggestedLimit = (p) => {
+    const f = factorOf(d.frequency)
+    const usd = p.incomeCurrency === 'USD'
+    const income = (Number(p.income) || 0) * f
+    const fixedCRC = recurring.filter((r) => !(Number(r.percent) > 0))
+      .reduce((s, r) => s + (r.currency === 'USD' ? Number(r.amount) * rate : Number(r.amount) || 0), 0)
+    const fixed = usd ? (rate > 0 ? fixedCRC / rate : 0) : fixedCRC
+    const v = Math.max(0, income * 0.7 - fixed)
+    return { amount: usd ? Math.round(v) : Math.round(v / 1000) * 1000, currency: usd ? 'USD' : 'CRC' }
+  }
   const [calcFor, setCalcFor] = useState(null)
   const [saving, setSaving] = useState(false)
   const per = d.frequency === 'quincenal' ? 'por quincena' : 'por mes'
@@ -109,6 +124,20 @@ export default function ProfileSection({ hid, me, profile }) {
                 />
               </Field>
             )}
+            {d.mode !== 'pareja' && Number(p.income) > 0 && (() => {
+              const s = suggestedLimit(p)
+              return (
+                <div className="rounded-xl bg-surface-2 p-3 text-small text-ink-2">
+                  <p>
+                    <span className="font-medium text-ink">Sugerido: <span className="tnum">{fmtAmount(s.amount, s.currency)}</span> al mes.</span>{' '}
+                    Regla 50/30/20 (Elizabeth Warren): 50% necesidades, 30% gustos, 20% ahorro. Con el diezmo aparte, queda un 70% para vivir; a eso se le restan tus fijos (celular, seguro…). Es una guía, no un estudio exacto.
+                  </p>
+                  <button type="button" className="mt-2 font-medium text-accent underline" onClick={() => setPerson(i, { spendLimit: s.amount, spendLimitCurrency: s.currency })}>
+                    Usar el sugerido
+                  </button>
+                </div>
+              )
+            })()}
             <Field
               label="Cómo apartás el ahorro"
               hint={p.autoSavingsPlaceId ? 'Sin botón Apartar: el ahorro se queda en esa cuenta y al cerrar el mes se cuenta solo.' : 'Cada mes tocás Apartar cuando mueves la plata.'}

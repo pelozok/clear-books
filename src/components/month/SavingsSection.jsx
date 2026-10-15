@@ -28,6 +28,9 @@ export default function SavingsSection({ hid, me, month, profile, summary, curre
   const frequency = month.frequency || profile?.frequency
   const rows = [...summary.rows].sort((a, b) => (a.half === currentHalf ? 0 : 1) - (b.half === currentHalf ? 0 : 1))
   if (!rows.length || summary.planned <= 0) return null
+  // Con ahorro automático no hay nada que hacer acá: el ahorro se cuenta solo al cerrar.
+  const autoOf = (pid) => (profile?.people || []).find((x) => x.id === pid)?.autoSavingsPlaceId
+  if (rows.every((r) => r.state === 'pending' && autoOf(r.personId))) return null
 
   const confirm = async ({ amount, placeId, note }) => {
     const row = open

@@ -104,3 +104,24 @@ export const profileToMonthPatch = (month, people = [], frequency = null) => {
   }
   return { frequency: freq, incomes, savings: { ...(month?.savings || {}), perPerson } };
 };
+
+// Con ahorro automático el perfil manda: en el mes abierto, el ahorro sin confirmar de
+// esas personas sigue al perfil (monto y moneda). Devuelve el nuevo `savings` o null si ya está.
+export const autoSavingsSync = (month, profile) => {
+  if (!month || month.status === "closed") return null;
+  let changed = false;
+  const perPerson = {};
+  for (const [pid, halves] of Object.entries(month.savings?.perPerson || {})) {
+    const person = (profile?.people || []).find((p) => p.id === pid);
+    perPerson[pid] = {};
+    for (const [hk, row] of Object.entries(halves || {})) {
+      const want = person?.autoSavingsPlaceId && row?.actual == null ? savingsPlanOf(person) : null;
+      const same = !want || (want.plannedCurrency === "USD"
+        ? row.plannedCurrency === "USD" && Number(row.plannedAmount) === want.plannedAmount
+        : row.plannedCurrency !== "USD" && Number(row.planned) === want.planned);
+      if (!same) changed = true;
+      perPerson[pid][hk] = same ? row : { ...row, ...want };
+    }
+  }
+  return changed ? { ...month.savings, perPerson } : null;
+};

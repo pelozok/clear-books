@@ -86,3 +86,11 @@ export const recordWithdrawal = (hid, me, data) =>
 // Aporte extra (aguinaldo apartado, sobrante, ajuste de saldo con kind 'opening_adjust').
 export const recordExtraContribution = (hid, me, data) =>
   freeMove(hid, me, "aporte", { kind: "extra", label: "Aporte extra" }, data);
+
+// Guarda el ahorro sincronizado con el perfil (ver autoSavingsSync).
+export async function syncAutoSavings(hid, me, month, savings) {
+  assertOpen(month);
+  const batch = newBatch();
+  batch.update(monthDoc(hid, month), { savings, ...touched() });
+  await commit(batch);
+}

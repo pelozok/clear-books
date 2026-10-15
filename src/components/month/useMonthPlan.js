@@ -1,5 +1,8 @@
 // Junta lo que necesita el plan del mes y llama a la lib (no calcula acá).
-import { useMemo } from 'react'
+import { useEffect, useMemo } from 'react'
+import { autoSavingsSync } from '../../data/pure/monthOps.js'
+import { syncAutoSavings } from '../../data/actions/index.js'
+import { deriveMonth } from '../../lib/derive.js'
 import { useHousehold } from '../../data/HouseholdContext.jsx'
 import { useAnnual, useEntries, useLedger, useMonth, useMonthsIndex, useSavingsPlaces } from '../../data/hooks/index.js'
 import { monthTotals, teQueda } from '../../lib/plan.js'
@@ -17,7 +20,12 @@ export function useMonthPlan(key) {
   const index = useMonthsIndex(hid)
   const today = todayISO()
 
-  const doc = month.data
+  // Ahorro automático: el perfil manda sobre el ahorro sin confirmar del mes abierto.
+  const sync = useMemo(() => autoSavingsSync(month.data, profile), [month.data, profile])
+  const doc = useMemo(() => (sync ? deriveMonth({ ...month.data, savings: sync }) : month.data), [sync, month.data])
+  useEffect(() => {
+    if (sync && month.data) syncAutoSavings(hid, me, month.data, sync).catch(() => {})
+  }, [sync, month.data, hid, me])
   const list = useMemo(() => entries.data || [], [entries.data])
   const derived = useMemo(() => {
     if (!doc) return null

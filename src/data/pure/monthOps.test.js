@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { materializeGate, applyTemplateToFixed, markFixedItem, upsertById, toPlain, profileToMonthPatch } from "./monthOps.js";
+import { materializeGate, applyTemplateToFixed, markFixedItem, upsertById, toPlain, profileToMonthPatch, autoSavingsSync } from "./monthOps.js";
 
 const tpl = { id: "r1", name: "Alquiler", amount: 350000, currency: "CRC", half: 1, active: true };
 
@@ -72,5 +72,18 @@ describe("profileToMonthPatch frecuencia", () => {
     expect(out.frequency).toBe("mensual");
     expect(Object.keys(out.savings.perPerson.p1)).toEqual(["q1"]);
     expect(out.savings.perPerson.p1.q1).toMatchObject({ plannedAmount: 300, plannedCurrency: "USD" });
+  });
+});
+
+describe("autoSavingsSync", () => {
+  const profile = { people: [{ id: "p1", autoSavingsPlaceId: "usd", savingsPerPeriod: 300, savingsCurrency: "USD" }] };
+  it("lleva el ahorro sin confirmar al perfil", () => {
+    const m = { status: "open", savings: { perPerson: { p1: { q1: { planned: 50000, actual: null } } } } };
+    expect(autoSavingsSync(m, profile).perPerson.p1.q1).toMatchObject({ plannedAmount: 300, plannedCurrency: "USD" });
+  });
+  it("no toca si ya está, si está confirmado o si el mes está cerrado", () => {
+    expect(autoSavingsSync({ status: "open", savings: { perPerson: { p1: { q1: { plannedAmount: 300, plannedCurrency: "USD", actual: null } } } } }, profile)).toBeNull();
+    expect(autoSavingsSync({ status: "open", savings: { perPerson: { p1: { q1: { planned: 50000, actual: 50000 } } } } }, profile)).toBeNull();
+    expect(autoSavingsSync({ status: "closed", savings: { perPerson: { p1: { q1: { planned: 50000, actual: null } } } } }, profile)).toBeNull();
   });
 });
