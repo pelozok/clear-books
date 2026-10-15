@@ -11,16 +11,18 @@ const PAYROLL = [{ value: 'Solidarista', label: 'Solidarista' }, { value: 'Coope
 const blankPerson = (i) => ({ id: `p${i + 1}`, name: '', incomeCRC: 0, incomeUSD: 0, savingsPerPeriod: 50000, payrollSavings: null })
 
 // Persona del perfil → borrador editable (un ingreso con su moneda).
-const toDraft = (p) => ({
+// El perfil guarda el ingreso mensual; el formulario lo muestra por quincena o por mes.
+const factorOf = (frequency) => (frequency === 'quincenal' ? 2 : 1)
+const toDraft = (p, f = 1) => ({
   ...p,
-  income: p.incomeUSD > 0 ? p.incomeUSD : p.incomeCRC || null,
+  income: (p.incomeUSD > 0 ? p.incomeUSD / f : (p.incomeCRC || 0) / f) || null,
   incomeCurrency: p.incomeUSD > 0 ? 'USD' : 'CRC',
 })
-const fromDraft = ({ income, incomeCurrency, ...p }) => ({
+const fromDraft = ({ income, incomeCurrency, ...p }, f = 1) => ({
   ...p,
   name: (p.name || '').trim(),
-  incomeCRC: incomeCurrency === 'USD' ? 0 : Number(income) || 0,
-  incomeUSD: incomeCurrency === 'USD' ? Number(income) || 0 : 0,
+  incomeCRC: incomeCurrency === 'USD' ? 0 : (Number(income) || 0) * f,
+  incomeUSD: incomeCurrency === 'USD' ? (Number(income) || 0) * f : 0,
   savingsPerPeriod: Number(p.savingsPerPeriod) || 0,
 })
 
@@ -30,7 +32,7 @@ export default function ProfileSection({ hid, me, profile }) {
     mode: profile?.mode || 'solo',
     frequency: profile?.frequency || 'mensual',
     splitRule: profile?.splitRule || 'igual_sobrante',
-    people: (profile?.people?.length ? profile.people : [blankPerson(0)]).map(toDraft),
+    people: (profile?.people?.length ? profile.people : [blankPerson(0)]).map((p) => toDraft(p, factorOf(profile?.frequency))),
   }))
   const [calcFor, setCalcFor] = useState(null)
   const [saving, setSaving] = useState(false)
@@ -46,7 +48,7 @@ export default function ProfileSection({ hid, me, profile }) {
   const save = async () => {
     setSaving(true)
     try {
-      await saveProfile(hid, me, { mode: d.mode, frequency: d.frequency, splitRule: d.splitRule, people: visible.map(fromDraft) })
+      await saveProfile(hid, me, { mode: d.mode, frequency: d.frequency, splitRule: d.splitRule, people: visible.map((p) => fromDraft(p, factorOf(d.frequency))) })
       toast.success('Perfil guardado. Aplica desde el próximo mes.')
     } catch (e) {
       toast.error(`No se pudo guardar: ${e.message || e}`)

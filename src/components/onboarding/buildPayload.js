@@ -27,11 +27,13 @@ export function buildPayload(s, hid) {
   const mKey = s.today.slice(0, 7)
   const startedAt = startsClean(s) ? `${mKey}-16` : `${mKey}-01`
   const base = baseSavingsMonthly(s)
+  const perMonth = s.frequency === 'quincenal' ? 2 : 1
   const people = s.people.map((p, i) => ({
     id: `p${i + 1}`,
     name: p.name.trim() || `Persona ${i + 1}`,
-    incomeCRC: p.incomeCurrency === 'USD' ? 0 : num(p.income),
-    incomeUSD: p.incomeCurrency === 'USD' ? num(p.income) : 0,
+    // El ingreso se pide por quincena (o por mes); el perfil guarda el mensual.
+    incomeCRC: p.incomeCurrency === 'USD' ? 0 : num(p.income) * perMonth,
+    incomeUSD: p.incomeCurrency === 'USD' ? num(p.income) * perMonth : 0,
     savingsPerPeriod: num(p.savings),
     payrollSavings: p.payroll && num(p.payrollAmount) > 0
       ? { label: p.payrollLabel, amount: num(p.payrollAmount), currency: p.payrollCurrency }

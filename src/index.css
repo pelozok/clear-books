@@ -16,6 +16,8 @@
 
     --c-bg: 244 245 247;
     --c-surface: 255 255 255;
+    --c-seg: 255 255 255;
+    --c-scrim: 21 24 30;
     --c-surface-2: 248 249 251;
     --c-line: 229 231 235;
     --c-ink: 21 24 30;
@@ -61,6 +63,8 @@
     :root:not([data-theme="light"]) {
       --c-bg: 15 18 23;
       --c-surface: 22 26 33;
+      --c-seg: 52 60 74;
+      --c-scrim: 0 0 0;
       --c-surface-2: 28 33 41;
       --c-line: 38 44 54;
       --c-ink: 238 241 245;
@@ -86,6 +90,8 @@
     color-scheme: dark;
     --c-bg: 15 18 23;
     --c-surface: 22 26 33;
+    --c-seg: 52 60 74;
+    --c-scrim: 0 0 0;
     --c-surface-2: 28 33 41;
     --c-line: 38 44 54;
     --c-ink: 238 241 245;
