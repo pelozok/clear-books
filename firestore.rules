@@ -1,0 +1,30 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isOwner(uid) {
+      return request.auth != null && request.auth.uid == uid;
+    }
+
+    // La pareja entra con su propio Google: su correo debe coincidir con
+    // partnerEmail del perfil del hogar (users/{uid}/config/profile).
+    function isPartner(uid) {
+      return request.auth != null
+        && request.auth.token.email != null
+        && get(/databases/$(database)/documents/users/$(uid)/config/profile).data.partnerEmail == request.auth.token.email;
+    }
+
+    // Allowlist de correos que pueden crear su propio hogar.
+    // PARA DAR ACCESO A ALGUIEN NUEVO: agregar su correo a esta lista y desplegar
+    // (ver docs/FIREBASE.md). La pareja invitada no necesita estar aquí para entrar
+    // al hogar del dueño, pero sí para tener un perfil propio con partnerOf.
+    function isAllowed() {
+      return request.auth != null
+        && request.auth.token.email in ['kevindp2008@gmail.com'];
+    }
+
+    match /users/{uid}/{document=**} {
+      allow read, write: if (isOwner(uid) && isAllowed()) || isPartner(uid);
+    }
+  }
+}
