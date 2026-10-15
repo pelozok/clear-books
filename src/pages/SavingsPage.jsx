@@ -28,6 +28,7 @@ export default function SavingsPage() {
           <SavingsHero
             couple={couple}
             totals={s.totals}
+            rate={s.rate}
             covered={s.covered}
             milestone={s.milestone}
             payroll={s.payroll}
@@ -35,9 +36,14 @@ export default function SavingsPage() {
             onExtra={() => openSheet('extra')}
             onWithdraw={() => openSheet('retiro')}
           />
-          <PlacesCard byPlace={s.totals.byPlace} rate={s.rate} />
-          <ReservesCard annual={s.annual} reservedByAnnual={s.totals.reservedByAnnual} rate={s.rate} />
-          <LedgerCard ledger={s.ledger} places={s.places} />
+          {/* Escritorio: a la izquierda dónde está la plata, a la derecha los movimientos. */}
+          <div className="flex flex-col gap-6 lg:grid lg:grid-cols-2 lg:items-start">
+            <div className="flex flex-col gap-6">
+              <PlacesCard byPlace={s.totals.byPlace} rate={s.rate} />
+              <ReservesCard annual={s.annual} reservedByAnnual={s.totals.reservedByAnnual} rate={s.rate} />
+            </div>
+            <LedgerCard ledger={s.ledger} places={s.places} />
+          </div>
         </div>
       )}
       <MoveSheet

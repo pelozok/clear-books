@@ -7,7 +7,8 @@ export default function ToolsPage() {
   return (
     <>
       <PageHeader title="Herramientas" settings />
-      <Card padded={false} className="mb-6 overflow-hidden">
+      {/* Móvil: lista. Escritorio: tarjetas en grilla. */}
+      <Card padded={false} className="mb-6 overflow-hidden lg:hidden">
         <RowGroup>
           {TOOLS.map((t) => (
             <Row
@@ -22,6 +23,22 @@ export default function ToolsPage() {
           ))}
         </RowGroup>
       </Card>
+      <ul className="mb-6 hidden gap-4 lg:grid lg:grid-cols-3">
+        {TOOLS.map((t) => (
+          <li key={t.id}>
+            <Link
+              to={`/herramientas/${t.id}`}
+              className="group flex h-full flex-col rounded-2xl bg-surface p-5 shadow-card transition-colors hover:bg-surface-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent"
+            >
+              <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-accent-soft text-accent-ink">
+                <t.icon size={20} strokeWidth={1.75} aria-hidden="true" />
+              </span>
+              <span className="mt-4 text-heading text-ink">{t.title}</span>
+              <span className="mt-1 text-small text-ink-2">{t.desc}</span>
+            </Link>
+          </li>
+        ))}
+      </ul>
     </>
   )
 }

@@ -1,14 +1,17 @@
 import { ArrowDownToLine, ArrowUpFromLine } from 'lucide-react'
 import { BigNumber, Button, Card } from '../ui/index.js'
-import { fmt } from '../../lib/format.js'
+import { fmt, fmtAmount } from '../../lib/format.js'
 import { fmtDec } from './useSavingsOverview.js'
 
 /** Cifra protagonista del ahorro + meses cubiertos + accesos a aporte y retiro. */
-export default function SavingsHero({ couple, totals, covered, milestone, payroll, payrollLabel, onExtra, onWithdraw }) {
+export default function SavingsHero({ couple, totals, rate, covered, milestone, payroll, payrollLabel, onExtra, onWithdraw }) {
   return (
     <Card>
       <p className="text-body text-ink-2">{couple ? 'Llevamos ahorrado' : 'Llevás ahorrado'}</p>
       <BigNumber amount={totals.totalCRC} className="mt-1" />
+      {rate > 0 && totals.totalCRC > 0 && (
+        <p className="tnum mt-1 text-body text-ink-2">≈ {fmtAmount(Math.round(totals.totalCRC / rate), 'USD')}</p>
+      )}
       {covered != null && (
         <p className="mt-2 text-body text-ink">
           <span className="tnum">{fmtDec(covered)}</span> {covered === 1 ? 'mes' : 'meses'} de fijos cubiertos

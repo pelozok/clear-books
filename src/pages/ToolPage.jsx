@@ -32,7 +32,9 @@ export default function ToolPage() {
       ) : ctx.loading ? (
         <PageSkeleton />
       ) : (
-        <div className="flex flex-col gap-6 pb-6">
+        // Escritorio: los datos a la izquierda (primera tarjeta, ocupa toda la altura) y
+        // el resultado con sus detalles a la derecha.
+        <div className="flex flex-col gap-6 pb-6 lg:grid lg:grid-cols-2 lg:items-start lg:gap-x-6 lg:gap-y-0 [&>*:first-child]:lg:sticky [&>*:first-child]:lg:top-6 [&>*:first-child]:lg:row-span-[12] [&>*:not(:first-child)]:lg:col-start-2 [&>*:not(:first-child)]:lg:mb-6">
           {/* key: al cambiar de calculadora se reinician los valores por defecto */}
           <t.Component key={t.id} ctx={ctx} />
         </div>

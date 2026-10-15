@@ -34,7 +34,10 @@ export default function HistoryPage() {
             <>
               <SavingsCurve series={series} total={s.totals.totalCRC} couple={couple} />
               <CategoryHistory closed={s.closed} profile={s.profile} />
-              <MonthHistoryList rows={rows} couple={couple} />
+              <div className="flex flex-col gap-6 lg:grid lg:grid-cols-2 lg:items-start">
+                <MonthHistoryList rows={rows} couple={couple} />
+                <ExportCard hid={s.hid} />
+              </div>
             </>
           ) : (
             <EmptyState
@@ -45,7 +48,7 @@ export default function HistoryPage() {
               } vas a ver cómo terminó cada mes y cuánto llevás ahorrado de verdad.`}
             />
           )}
-          <ExportCard hid={s.hid} />
+          {!ready && <ExportCard hid={s.hid} />}
         </div>
       )}
     </>

@@ -77,14 +77,17 @@ function SideNav({ pathname }) {
   )
 }
 
+// Pantallas que en escritorio usan todo el ancho, en columnas (Ajustes y formularios quedan angostos).
+const WIDE = ['/mes', '/ahorro', '/historial', '/herramientas']
+
 /** Marco de la app: barra inferior en móvil, barra lateral ≥ 1024px, contenido a max-w-3xl
- *  (el mes se abre a max-w-6xl en escritorio, en columnas). */
+ *  (mes, ahorro, historial y herramientas se abren a max-w-6xl en escritorio). */
 export default function AppShell({ children }) {
   const { pathname } = useLocation()
   return (
     <div className="min-h-dvh lg:pl-side">
       <SideNav pathname={pathname} />
-      <main className={`mx-auto ${pathname.startsWith('/mes') ? 'max-w-3xl lg:max-w-6xl' : 'max-w-3xl'} px-gutter pb-[calc(var(--nav-h)+env(safe-area-inset-bottom)+24px)] lg:pb-12`}>
+      <main className={`mx-auto ${WIDE.some((w) => pathname.startsWith(w)) ? 'max-w-3xl lg:max-w-6xl' : 'max-w-3xl'} px-gutter pb-[calc(var(--nav-h)+env(safe-area-inset-bottom)+24px)] lg:pb-12`}>
         {children ?? <Outlet />}
       </main>
       <NavBar pathname={pathname} />
