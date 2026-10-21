@@ -13,8 +13,8 @@ export default defineConfig(({ command }) => ({
       registerType: 'autoUpdate',
       includeAssets: ['icon.svg', 'favicon.svg', 'apple-touch-icon.png'],
       manifest: {
-        name: 'clear-books',
-        short_name: 'clear-books',
+        name: 'Clear Books',
+        short_name: 'Books',
         description: 'Tu plan del mes y tu ahorro, en un solo lugar',
         lang: 'es-CR',
         start_url: '/clear-books/',

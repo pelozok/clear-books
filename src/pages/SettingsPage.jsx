@@ -17,7 +17,7 @@ const SECTIONS = [
   { key: 'lugares', title: 'Lugares de ahorro', subtitle: 'Cuentas, CDP, cooperativa', icon: PiggyBank, Comp: PlacesSection },
   { key: 'categorias', title: 'Categorías', subtitle: 'Para los gastos del mes', icon: Tags, Comp: CategoriesSection },
   { key: 'pareja', title: 'Pareja', subtitle: 'Compartir el hogar', icon: Heart, Comp: PartnerSection },
-  { key: 'datos', title: 'Datos y cuenta', subtitle: 'Exportar, tipo de cambio, cerrar sesión', icon: Database, Comp: DataSection },
+  { key: 'datos', title: 'Datos y cuenta', subtitle: 'Exportar, tipo de cambio, sesión, borrar todo', icon: Database, Comp: DataSection },
 ]
 
 export default function SettingsPage() {

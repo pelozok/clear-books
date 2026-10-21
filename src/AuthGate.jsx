@@ -40,7 +40,7 @@ export default function AuthGate({ children }) {
     return (
       <main className="flex min-h-dvh items-center justify-center bg-bg px-gutter">
         <div className="w-full max-w-sm rounded-2xl bg-surface p-6 shadow-card sm:p-8">
-          <h1 className="text-title text-ink">clear-books</h1>
+          <h1 className="text-title text-ink">Clear Books</h1>
           <p className="mt-2 text-body text-ink-2">
             El plan del mes y lo que llevan ahorrado, en un solo lugar. Iniciá sesión para ver tus datos desde
             cualquier dispositivo.

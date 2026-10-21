@@ -9,3 +9,4 @@ export {
 export { markFixed, updateFixedItem, updateMonthField, addExtra, removeExtra, payAnnual } from "./month.js";
 export { addEntry, updateEntry, removeEntry } from "./entries.js";
 export { closeMonth, markCloseSeen } from "./close.js";
+export { wipeHousehold } from "./reset.js";

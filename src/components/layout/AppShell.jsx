@@ -62,7 +62,7 @@ function SideNav({ pathname }) {
       aria-label="Principal"
       className="fixed inset-y-0 left-0 z-30 hidden w-side flex-col border-r border-line bg-surface px-3 pb-4 pt-5 lg:flex"
     >
-      <p className="mb-6 px-3 text-heading text-ink">clear-books</p>
+      <p className="mb-6 px-3 text-heading text-ink">Clear Books</p>
       <ul className="flex flex-col gap-1">
         {NAV.map((item) => (
           <li key={item.to}>

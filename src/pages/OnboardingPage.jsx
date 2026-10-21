@@ -93,7 +93,7 @@ export default function OnboardingPage() {
     <div className="mx-auto flex min-h-dvh max-w-xl flex-col px-gutter">
       <header className="pt-6">
         <div className="flex items-center justify-between text-small text-muted">
-          <span>clear-books</span>
+          <span>Clear Books</span>
           <span className="tnum">Paso {step + 1} de {STEPS.length}</span>
         </div>
         <ProgressBar value={step + 1} max={STEPS.length} className="mt-3" />
