@@ -21,6 +21,7 @@ const STEPS = [
     body: 'Lo que entra a la cuenta. Con esto calculamos cuánto te queda.',
     Comp: StepPeople,
     ok: (s) => s.people.every((p) => p.name.trim() && filled(p.income)),
+    why: 'Falta el nombre o el ingreso para seguir.',
   },
   { title: 'Ahorro', body: 'Cuánto querés apartar cada vez que te pagan.', Comp: StepSavings },
   {
@@ -28,6 +29,7 @@ const STEPS = [
     body: 'Tocá los que tenés y poné cuánto pagás al mes.',
     Comp: StepFixed,
     ok: (s) => s.fixed.every((f) => f.name.trim() && filled(f.amount)),
+    why: 'Poné el monto de cada fijo, o quitá los que no tenés.',
   },
   { title: 'Dónde guardás el ahorro', body: 'De 1 a 3 lugares, con el saldo que tienen hoy.', Comp: StepPlaces },
   { title: '¿Qué ya pasó este mes?', body: null, Comp: StepAlready },
@@ -59,7 +61,7 @@ export default function OnboardingPage() {
     setS((prev) => ({ ...prev, people: prev.people.map((p, j) => (j === i ? { ...p, ...patch } : p)) }))
 
   const step = Math.min(s.step, STEPS.length - 1)
-  const { title, body, Comp, ok } = STEPS[step]
+  const { title, body, Comp, ok, why } = STEPS[step]
   const last = step === STEPS.length - 1
   const canNext = !ok || ok(s)
   const go = (d) => {
@@ -102,7 +104,8 @@ export default function OnboardingPage() {
       </header>
 
       <main className="flex-1 py-6">
-        <Comp s={s} set={set} setPerson={setPerson} />
+        <Comp s={s} set={set} setPerson={setPerson} next={() => go(1)} />
+        {!canNext && why && <p className="mt-6 text-small text-muted" role="status">{why}</p>}
       </main>
 
       <footer className="sticky bottom-0 -mx-gutter flex gap-3 border-t border-line bg-bg px-gutter pb-[calc(12px+env(safe-area-inset-bottom))] pt-3">

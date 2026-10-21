@@ -45,7 +45,7 @@ service cloud.firestore {
 
     match /users/{uid}/config/profile {
       allow update: if isPartner(uid)
-        && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['partnerEmail', 'partnerOf']);
+        && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['partnerEmail', 'partnerOf', 'wiping']);
     }
   }
 }

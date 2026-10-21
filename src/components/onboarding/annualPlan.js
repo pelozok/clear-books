@@ -1,7 +1,7 @@
 // Primer año de una reserva anual: usa firstYearSuggestion de la lib y traduce la
 // decisión a { firstYear, startsFrom } para guardar en annual/{id}.
 import { firstYearSuggestion } from '../../lib/reserve.js'
-import { monthLabel, shiftMonth } from '../../lib/periods.js'
+import { shiftMonth } from '../../lib/periods.js'
 
 export const MONTH_NAMES = [
   'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
@@ -32,9 +32,9 @@ export const planFields = (plan, item, mKey) =>
 
 export const planOptions = (item, mKey) => {
   const start = coveredStart(item.month, mKey)
-  const startName = MONTH_NAMES[Number(start.slice(5, 7)) - 1]
+  const startName = `${MONTH_NAMES[Number(start.slice(5, 7)) - 1]} de ${start.slice(0, 4)}`
   return [
-    { value: 'cubierto-aparte', label: 'Este año aparte', hint: `Este año sale del aguinaldo o de otro lado; reservamos desde ${startName} (${monthLabel(start)}).` },
+    { value: 'cubierto-aparte', label: 'Este año aparte', hint: `Este año sale del aguinaldo o de otro lado; reservamos desde ${startName}.` },
     { value: 'reservar', label: 'Reservar ya', hint: 'Empezamos a apartar desde este mes; la cuota mensual sale más alta.' },
   ]
 }

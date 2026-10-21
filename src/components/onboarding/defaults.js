@@ -35,8 +35,11 @@ export const ANNUAL_SUGGESTIONS = [
   { key: 'navidad', name: 'Navidad', month: 12 },
 ]
 
+// Meta de ahorro sugerida (en ₡) con la que arranca el paso de ahorro.
+export const SUGGESTED_SAVINGS = 50000
+
 export const newPerson = (i) => ({
-  id: `p${i + 1}`, name: '', income: null, incomeCurrency: 'CRC', savings: 50000,
+  id: `p${i + 1}`, name: '', income: null, incomeCurrency: 'CRC', savings: SUGGESTED_SAVINGS, savingsCurrency: 'CRC',
   payroll: false, payrollLabel: 'Solidarista', payrollAmount: null, payrollCurrency: 'CRC',
 })
 

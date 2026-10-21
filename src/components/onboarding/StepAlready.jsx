@@ -2,7 +2,7 @@ import { Sparkles, CalendarCheck } from 'lucide-react'
 import { fmtAmount, fmtDateLong } from '../../lib/format.js'
 import { halfLabel } from '../../lib/periods.js'
 import Choice, { CheckRow } from './Choice.jsx'
-import { isLateHalf, validFixed } from './buildPayload.js'
+import { hasSavings, isLateHalf, validFixed } from './buildPayload.js'
 
 export default function StepAlready({ s, set }) {
   const late = isLateHalf(s)
@@ -54,15 +54,17 @@ export default function StepAlready({ s, set }) {
               </div>
             )}
           </section>
-          <section>
-            <h2 className="text-heading text-ink">{quincenal ? '¿Ya apartaste el ahorro de la 1ra quincena?' : '¿Ya apartaste el ahorro de este mes?'}</h2>
-            <CheckRow
-              checked={s.savedAlready}
-              onChange={(v) => set({ savedAlready: v })}
-              label="Sí, ya lo aparté"
-              hint={s.places[0]?.name ? `Lo anotamos como aporte en ${s.places[0].name}; ya está contado en el saldo de hoy.` : 'Agregá un lugar de ahorro en el paso anterior para anotarlo.'}
-            />
-          </section>
+          {hasSavings(s) && (
+            <section>
+              <h2 className="text-heading text-ink">{quincenal ? '¿Ya apartaste el ahorro de la 1ra quincena?' : '¿Ya apartaste el ahorro de este mes?'}</h2>
+              <CheckRow
+                checked={s.savedAlready}
+                onChange={(v) => set({ savedAlready: v })}
+                label="Sí, ya lo aparté"
+                hint={s.places[0]?.name ? `Lo anotamos como aporte en ${s.places[0].name}; ya está contado en el saldo de hoy.` : 'Agregá un lugar de ahorro en el paso anterior para anotarlo.'}
+              />
+            </section>
+          )}
         </>
       )}
       <p className="text-small text-muted">Nada de esto es definitivo: todo se corrige después desde el plan del mes.</p>

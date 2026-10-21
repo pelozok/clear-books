@@ -39,6 +39,10 @@ export const ensureMonth = async (hid, key, opts = {}) => {
     return await runTransaction(db, async (tx) => {
       const snap = await tx.get(ref);
       if (snap.exists()) return "exists";
+      // El perfil se relee en la transacción: si el hogar se está borrando (wipeHousehold)
+      // no se recrea el mes, aunque otra pestaña lo tenga abierto.
+      const prof = await tx.get(profileRef(hid));
+      if (!prof.exists() || prof.data().wiping) return "noProfile";
       tx.set(ref, doc);
       return "created";
     });

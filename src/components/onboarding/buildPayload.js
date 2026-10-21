@@ -6,12 +6,23 @@ import { monthRef, recurringCol, placesCol, newId } from '../../data/db.js'
 import { docData } from '../../data/snap.js'
 import { DEFAULT_CATEGORIES } from '../settings/categoryIcons.js'
 import { planFields, suggestPlan } from './annualPlan.js'
+import { DEFAULT_RATE, fetchExchangeRate } from '../../lib/exchange.js'
+import { toCRC } from '../../lib/format.js'
 
 const num = (v) => (Number.isFinite(Number(v)) ? Number(v) : 0)
 
-// Ahorro base del hogar al mes (para la regla de primer año de las reservas).
-export const baseSavingsMonthly = (s) =>
-  s.people.reduce((t, p) => t + num(p.savings), 0) * (s.frequency === 'quincenal' ? 2 : 1)
+// Ahorro base del hogar al mes en ₡ (para la regla de primer año de las reservas).
+// En el wizard todavía no hay TC del mes: se usa el de respaldo.
+export const baseSavingsMonthly = (s, rate = DEFAULT_RATE.venta) =>
+  s.people.reduce((t, p) => t + toCRC(num(p.savings), p.savingsCurrency, rate), 0) * (s.frequency === 'quincenal' ? 2 : 1)
+
+// Monto llevado a la moneda de un lugar de ahorro (₡ enteros, $ con centavos).
+const inCurrency = (amount, from, to, rate) => {
+  if (from === to) return amount
+  return to === 'USD' ? Math.round((amount / rate) * 100) / 100 : Math.round(amount * rate)
+}
+
+export const hasSavings = (s) => s.people.some((p) => num(p.savings) > 0)
 
 export const effectivePlan = (a, mKey, base) => a.plan || suggestPlan(a, mKey, base)
 
@@ -23,10 +34,10 @@ export const startsClean = (s) => isLateHalf(s) && s.cleanStart
 
 export const validFixed = (s) => s.fixed.filter((f) => f.name.trim() && num(f.amount) > 0)
 
-export function buildPayload(s, hid) {
+export function buildPayload(s, hid, rate = DEFAULT_RATE.venta) {
   const mKey = s.today.slice(0, 7)
   const startedAt = startsClean(s) ? `${mKey}-16` : `${mKey}-01`
-  const base = baseSavingsMonthly(s)
+  const base = baseSavingsMonthly(s, rate)
   const perMonth = s.frequency === 'quincenal' ? 2 : 1
   const people = s.people.map((p, i) => ({
     id: `p${i + 1}`,
@@ -35,6 +46,7 @@ export function buildPayload(s, hid) {
     incomeCRC: p.incomeCurrency === 'USD' ? 0 : num(p.income) * perMonth,
     incomeUSD: p.incomeCurrency === 'USD' ? num(p.income) * perMonth : 0,
     savingsPerPeriod: num(p.savings),
+    savingsCurrency: p.savingsCurrency === 'USD' ? 'USD' : 'CRC',
     payrollSavings: p.payroll && num(p.payrollAmount) > 0
       ? { label: p.payrollLabel, amount: num(p.payrollAmount), currency: p.payrollCurrency }
       : null,
@@ -72,9 +84,10 @@ export function buildPayload(s, hid) {
   }
   // El saldo de hoy ya incluye el ahorro apartado: el aporte va al libro y el saldo
   // inicial queda sin él, para que el total siga cuadrando con el banco.
-  const savedNow = !startsClean(s) && s.savedAlready && places[0]
-  if (savedNow && places[0].currency === 'CRC') {
-    const total = people.reduce((t, p) => t + p.savingsPerPeriod, 0)
+  const savedNow = !startsClean(s) && s.savedAlready && hasSavings(s) && !!places[0]
+  if (savedNow) {
+    const to = places[0].currency
+    const total = people.reduce((t, p) => t + inCurrency(p.savingsPerPeriod, p.savingsCurrency, to, rate), 0)
     places[0].openingAmount = Math.max(0, places[0].openingAmount - total)
   }
   return { mKey, startedAt, profile, recurring, annual, places, savedNow }
@@ -84,7 +97,9 @@ const readMonth = async (hid, key) => docData(await getDoc(monthRef(hid, key)))
 
 /** Crea el hogar y marca lo que ya pasó. Devuelve la clave del mes para navegar. */
 export async function finishOnboarding(hid, me, s) {
-  const { mKey, profile, recurring, annual, places, savedNow } = buildPayload(s, hid)
+  // El mismo TC que tomará el mes nuevo (si falla la red, el de respaldo).
+  const rate = (await fetchExchangeRate(s.today).catch(() => null))?.venta || DEFAULT_RATE.venta
+  const { mKey, profile, recurring, annual, places, savedNow } = buildPayload(s, hid, rate)
   const paidTmp = new Set(startsClean(s) ? [] : s.paidFixed)
   const paidIds = recurring.filter((r) => paidTmp.has(r._tmp)).map((r) => r.id)
   await createProfile(hid, me, {
@@ -109,7 +124,11 @@ export async function finishOnboarding(hid, me, s) {
       if (p.savingsPerPeriod <= 0) continue
       const month = await readMonth(hid, mKey)
       if (!month) break
-      await confirmSavings(hid, me, month, { personId: p.id, half: 1, amount: p.savingsPerPeriod, placeId: places[0].id, date: s.today })
+      // El libro guarda el aporte en ₡, igual que al confirmarlo desde el mes.
+      await confirmSavings(hid, me, month, {
+        personId: p.id, half: 1, amount: Math.round(toCRC(p.savingsPerPeriod, p.savingsCurrency, month.exchangeRate?.venta || rate)),
+        placeId: places[0].id, date: s.today, label: profile.frequency === 'mensual' ? 'Ahorro del mes' : undefined,
+      })
     }
   }
   return mKey

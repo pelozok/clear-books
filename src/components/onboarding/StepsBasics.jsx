@@ -3,7 +3,7 @@ import { CalendarDays, CalendarRange, User, Users } from 'lucide-react'
 import { AmountInput, Chip, Field, Input, Segmented } from '../ui/index.js'
 import Choice from './Choice.jsx'
 import NetSalarySheet from './NetSalarySheet.jsx'
-import { newPerson } from './defaults.js'
+import { newPerson, SUGGESTED_SAVINGS } from './defaults.js'
 
 const perLabel = (frequency) => (frequency === 'quincenal' ? 'por quincena' : 'por mes')
 
@@ -62,16 +62,30 @@ export function StepPeople({ s, setPerson }) {
   )
 }
 
-export function StepSavings({ s, setPerson }) {
+export function StepSavings({ s, set, setPerson, next }) {
+  const quincenal = s.frequency === 'quincenal'
+  // Saltar: sin meta de ahorro por ahora; se configura después en Ajustes → Perfil.
+  const skip = () => {
+    set({ people: s.people.map((p) => ({ ...p, savings: 0, payroll: false })) })
+    next()
+  }
   return (
     <div className="space-y-8">
       {s.people.map((p, i) => (
         <div key={p.id} className="space-y-4">
           <Field
             label={`${s.mode === 'pareja' ? `Ahorro de ${p.name || `persona ${i + 1}`}` : 'Tu ahorro'} ${perLabel(s.frequency)}`}
-            hint="Es una meta: cada quincena confirmás cuánto apartaste de verdad."
+            hint={`Es una meta: ${quincenal ? 'cada quincena' : 'cada mes'} confirmás cuánto apartaste de verdad.`}
           >
-            <AmountInput value={p.savings} currency="CRC" allowCurrencyToggle={false} onChange={({ amount }) => setPerson(i, { savings: amount })} />
+            <AmountInput
+              value={p.savings}
+              currency={p.savingsCurrency || 'CRC'}
+              onChange={({ amount, currency }) => {
+                // La sugerencia está en ₡: al pasar a $ no se convierte en $50.000.
+                const switched = currency !== (p.savingsCurrency || 'CRC') && Number(amount) === SUGGESTED_SAVINGS
+                setPerson(i, { savings: switched ? null : amount, savingsCurrency: currency })
+              }}
+            />
           </Field>
           <div className="space-y-3">
             <Chip selected={p.payroll} onClick={() => setPerson(i, { payroll: !p.payroll })}>
@@ -98,6 +112,14 @@ export function StepSavings({ s, setPerson }) {
           </div>
         </div>
       ))}
+      <div className="space-y-1.5 border-t border-line pt-5">
+        <button type="button" className="text-small font-medium text-accent underline" onClick={skip}>
+          Saltar por ahora
+        </button>
+        <p className="text-small text-muted">
+          Lo configurás después en Ajustes → Perfil, con más opciones: ahorro que se queda solo en una cuenta y límite de gasto.
+        </p>
+      </div>
     </div>
   )
 }
