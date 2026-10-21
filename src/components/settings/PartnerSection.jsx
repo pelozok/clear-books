@@ -12,6 +12,17 @@ export default function PartnerSection({ hid, me, profile }) {
   const changed = clean !== (profile?.partnerEmail || '')
   const error = clean && !isEmail(clean) ? 'Revisá el correo, parece incompleto.' : null
 
+  // Solo quien creó el hogar decide con quién se comparte (las reglas también lo exigen).
+  if (me?.uid && hid !== me.uid) {
+    return (
+      <Card title="Compartir el hogar">
+        <p className="text-body text-ink-2">
+          Estás en el hogar que comparte contigo quien lo creó. Solo esa persona puede cambiar con quién se comparte.
+        </p>
+      </Card>
+    )
+  }
+
   const save = async () => {
     setBusy(true)
     try {

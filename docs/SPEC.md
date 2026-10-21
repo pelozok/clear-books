@@ -18,7 +18,7 @@ Leer también `PRODUCT.md` (verdad del producto) y `docs/DESIGN-TOKENS.md` (toke
 
 ## 1. Modelo de datos (Firestore, todo bajo `users/{uid}/`)
 
-Reglas: dueño (`request.auth.uid == uid`) o pareja (`request.auth.token.email == get(users/{uid}/config/profile).data.partnerEmail`). Ver `firestore.rules`.
+Reglas: dueño (`request.auth.uid == uid`) o pareja (`request.auth.token.email == get(users/{uid}/config/profile).data.partnerEmail`); la pareja no puede cambiar `partnerEmail`/`partnerOf` ni borrar el perfil. Ver `firestore.rules`.
 
 ### `config/profile` (doc único)
 ```js

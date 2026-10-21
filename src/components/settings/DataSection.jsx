@@ -1,23 +1,12 @@
 import { useState } from 'react'
 import { FileJson, FileSpreadsheet, LogOut, Trash2 } from 'lucide-react'
-import { signOut } from 'firebase/auth'
-import { auth } from '../../firebaseConfig.js'
 import { downloadBackup, downloadExcel } from '../../data/archive.js'
 import { saveProfile, wipeHousehold } from '../../data/actions/index.js'
-import { clearState as clearOnboardingDraft } from '../onboarding/defaults.js'
+import { clearLocalPrefs, signOutAndForget } from '../../data/session.js'
 import { AmountInput, Button, Card, Field, Input, Sheet, useToast } from '../ui/index.js'
 import pkg from '../../../package.json'
 
 const CONFIRM_WORD = 'BORRAR'
-
-// Recordatorios locales (último lugar/categoría): no deben sobrevivir al hogar borrado.
-const clearLocalPrefs = () => {
-  try {
-    Object.keys(window.localStorage).filter((k) => k.startsWith('cb.')).forEach((k) => window.localStorage.removeItem(k))
-  } catch {
-    /* almacenamiento bloqueado: se ignora */
-  }
-}
 
 export default function DataSection({ hid, me, profile }) {
   const toast = useToast()
@@ -33,7 +22,6 @@ export default function DataSection({ hid, me, profile }) {
     run('wipe', async () => {
       await wipeHousehold(hid, me)
       clearLocalPrefs()
-      clearOnboardingDraft()
     }, 'Listo, empezás de cero')
 
   const closeWipe = () => {
@@ -85,7 +73,8 @@ export default function DataSection({ hid, me, profile }) {
         </Card>
 
         <Card title="Cuenta" subtitle={me?.email || undefined}>
-          <Button variant="danger" icon={LogOut} loading={busy === 'out'} onClick={() => run('out', () => signOut(auth))}>
+          <p className="mb-3 text-small text-muted">Al salir se borra la copia guardada en este aparato. Tus datos siguen en la nube.</p>
+          <Button variant="danger" icon={LogOut} loading={busy === 'out'} onClick={() => run('out', signOutAndForget)}>
             Cerrar sesión
           </Button>
         </Card>

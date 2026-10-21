@@ -36,8 +36,16 @@ service cloud.firestore {
            ];
     }
 
-    match /users/{uid}/{document=**} {
-      allow read, write: if (isOwner(uid) && isAllowed()) || isPartner(uid);
+    // La pareja anota en todo el hogar menos config/ (el perfil): ahí solo puede
+    // actualizar, sin tocar quién comparte el hogar ni borrarlo (regla de abajo).
+    match /users/{uid}/{col}/{rest=**} {
+      allow read: if (isOwner(uid) && isAllowed()) || isPartner(uid);
+      allow write: if (isOwner(uid) && isAllowed()) || (isPartner(uid) && col != 'config');
+    }
+
+    match /users/{uid}/config/profile {
+      allow update: if isPartner(uid)
+        && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['partnerEmail', 'partnerOf']);
     }
   }
 }
