@@ -39,6 +39,14 @@ export async function updateFixedItem(hid, me, monthArg, item) {
   await commit(batch);
 }
 
+// Escribe el patch de monthTemplateSync (mes al día con perfil y plantilla).
+export async function syncMonthTemplate(hid, me, month, patch) {
+  assertOpen(month);
+  const batch = newBatch();
+  batch.update(monthDoc(hid, month), { ...patch, ...touched() });
+  await commit(batch);
+}
+
 // Campo puntual del mes por ruta: 'incomes.p1.salaryCRC', 'exchangeRate',
 // 'savings.perPerson.p1.q1.planned', 'splitRule'.
 export async function updateMonthField(hid, me, month, path, value) {

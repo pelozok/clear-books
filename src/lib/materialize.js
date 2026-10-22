@@ -57,7 +57,9 @@ const savingsFrom = (people = [], halves, skipQ1) => {
 };
 
 // Fijos del mes desde la plantilla activa. Id estable: templateId + monthKey.
-const fixedFromTemplate = (recurring = [], monthKey, skipHalf1) =>
+// Todos entran pendientes (aunque se arranque en la 2da quincena): se marcan Pagado u
+// Omitido a mano.
+const fixedFromTemplate = (recurring = [], monthKey) =>
   recurring
     .filter((r) => r && r.active !== false)
     .filter((r) => r.cuotasRestantes == null || r.cuotasRestantes > 0)
@@ -71,7 +73,7 @@ const fixedFromTemplate = (recurring = [], monthKey, skipHalf1) =>
       amount: Number(r.amount) || 0,
       currency: r.currency || "CRC",
       half: r.half ?? 1,
-      status: skipHalf1 && r.half === 1 ? "skipped" : "pending",
+      status: "pending",
       paidAt: null,
       paidAmount: null,
       deferredTo: null,
@@ -143,12 +145,13 @@ export const materializeMonth = ({
     extras: [],
     savings: savingsFrom(people, halves, skipHalf1),
     fixedItems: [
-      ...fixedFromTemplate(recurring, monthKey, skipHalf1),
+      ...fixedFromTemplate(recurring, monthKey),
       ...deferredFrom(previousMonth, prevKey, monthKey),
     ],
     annualReserve: { ...reserve, done: false, ledgerId: null },
     carryover: { in: carryIn, out: 0 },
     closing: null,
+    fixedChecked: true,
     createdAt: today,
     updatedAt: today,
   });

@@ -149,14 +149,15 @@ describe("materializeMonth · con mes anterior", () => {
 });
 
 describe("materializeMonth · parcial", () => {
-  it("quincenal desde el 16: q1 en 0 y fijos de la 1ra quincena saltados", () => {
+  it("quincenal desde el 16: q1 en 0 y los fijos entran pendientes", () => {
     const m = materializeMonth({ ...base, partial: true, startedAt: "2026-10-16", today: "2026-10-16" });
     expect(m.partial).toBe(true);
     expect(m.startedAt).toBe("2026-10-16");
     expect(m.savings.perPerson.p1.q1.planned).toBe(0);
     expect(m.savings.perPerson.p1.q2.planned).toBe(50000);
     const byName = Object.fromEntries(m.fixedItems.map((f) => [f.name, f.status]));
-    expect(byName).toEqual({ Alquiler: "skipped", Luz: "pending", Internet: "pending", Carro: "pending" });
+    expect(byName).toEqual({ Alquiler: "pending", Luz: "pending", Internet: "pending", Carro: "pending" });
+    expect(m.fixedChecked).toBe(true);
   });
 
   it("parcial desde la 1ra quincena no salta nada", () => {

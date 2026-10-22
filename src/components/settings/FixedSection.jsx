@@ -25,12 +25,12 @@ export default function FixedSection({ hid, me, profile }) {
   const quincenal = profile?.frequency === 'quincenal'
   const items = (data || []).filter((r) => r.active !== false)
   const [edit, setEdit] = useState(null)
-  const [apply, setApply] = useState(false)
+  const [apply, setApply] = useState(true)
   const [busy, setBusy] = useState(false)
 
   const open = (item) => {
     setEdit(item ? { ...item, kind: isPercent(item) ? 'percent' : 'monto' } : { ...BLANK, kind: 'monto', order: items.length })
-    setApply(false)
+    setApply(true)
   }
   const patch = (p) => setEdit((e) => ({ ...e, ...p }))
   const valid = edit && edit.name.trim() && (edit.kind === 'percent' ? Number(edit.percent) > 0 && Number(edit.percent) <= 100 : Number(edit.amount) > 0)
@@ -78,7 +78,7 @@ export default function FixedSection({ hid, me, profile }) {
         empty={{ icon: Receipt, title: 'Sin gastos fijos', body: 'Agregá alquiler, servicios o cuotas: lo que pagás todos los meses.' }}
         addLabel="Agregar fijo"
         onAdd={() => open(null)}
-        note="Los cambios aplican a los meses nuevos. Al guardar podés pedir que también cambien el mes en curso."
+        note="Un fijo nuevo entra también en el mes en curso. Si cambiás uno, elegís si aplica a este mes o desde el próximo."
       >
         {items.map((r) => (
           <Row
@@ -135,7 +135,7 @@ export default function FixedSection({ hid, me, profile }) {
                 <Input type="number" inputMode="numeric" min="0" value={edit.cuotasRestantes ?? ''} onChange={(e) => patch({ cuotasRestantes: e.target.value })} />
               </Field>
             )}
-            {canApply && (
+            {canApply && edit.id && (
               <CheckRow
                 checked={apply}
                 onChange={setApply}

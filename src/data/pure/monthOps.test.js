@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { materializeGate, applyTemplateToFixed, markFixedItem, upsertById, toPlain, profileToMonthPatch, autoSavingsSync } from "./monthOps.js";
+import { materializeGate, applyTemplateToFixed, markFixedItem, upsertById, toPlain, profileToMonthPatch, autoSavingsSync, monthTemplateSync } from "./monthOps.js";
 
 const tpl = { id: "r1", name: "Alquiler", amount: 350000, currency: "CRC", half: 1, active: true };
 
@@ -85,5 +85,42 @@ describe("autoSavingsSync", () => {
     expect(autoSavingsSync({ status: "open", savings: { perPerson: { p1: { q1: { plannedAmount: 300, plannedCurrency: "USD", actual: null } } } } }, profile)).toBeNull();
     expect(autoSavingsSync({ status: "open", savings: { perPerson: { p1: { q1: { planned: 50000, actual: 50000 } } } } }, profile)).toBeNull();
     expect(autoSavingsSync({ status: "closed", savings: { perPerson: { p1: { q1: { planned: 50000, actual: null } } } } }, profile)).toBeNull();
+  });
+});
+
+describe("monthTemplateSync", () => {
+  const profile = { frequency: "mensual", people: [{ id: "p1", incomeUSD: 1500, savingsPerPeriod: 0 }] };
+  const month = {
+    id: "2026-10", status: "open", frequency: "mensual", fixedChecked: true,
+    incomes: { p1: { salaryCRC: 0, salaryUSD: 1500 } }, savings: { perPerson: { p1: { q1: { planned: 0, actual: null } } } },
+    fixedItems: [{ id: "r1_2026-10", templateId: "r1", fromMonth: null, name: "Alquiler", amount: 350000, currency: "CRC", half: 1, status: "pending" }],
+  };
+  const diezmo = { id: "r2", name: "Diezmo", amount: 0, percent: 10, currency: "USD", half: 1, active: true };
+
+  it("al día: null", () => {
+    expect(monthTemplateSync(month, [tpl], profile, "2026-10")).toBeNull();
+  });
+  it("agrega un fijo nuevo de la plantilla como pendiente", () => {
+    const p = monthTemplateSync(month, [tpl, diezmo], profile, "2026-10");
+    expect(p.fixedItems.map((f) => [f.name, f.status, f.percent])).toEqual([["Alquiler", "pending", undefined], ["Diezmo", "pending", 10]]);
+  });
+  it("no agrega inactivos ni toca meses pasados o cerrados", () => {
+    expect(monthTemplateSync(month, [tpl, { ...diezmo, active: false }], profile, "2026-10")).toBeNull();
+    expect(monthTemplateSync(month, [tpl, diezmo], profile, "2026-11")).toBeNull();
+    expect(monthTemplateSync({ ...month, status: "closed" }, [tpl, diezmo], profile, "2026-10")).toBeNull();
+  });
+  it("frecuencia del perfil manda: quincenal → mensual", () => {
+    const m = { ...month, frequency: "quincenal", savings: { perPerson: { p1: { q1: { planned: 0, actual: null }, q2: { planned: 0, actual: null } } } } };
+    const p = monthTemplateSync(m, [tpl], profile, "2026-10");
+    expect(p.frequency).toBe("mensual");
+    expect(p.savings.perPerson.p1.q2).toBeUndefined();
+  });
+  it("una vez: lo omitido por el arranque vuelve a pendiente", () => {
+    const m = { ...month, fixedChecked: undefined, fixedItems: [{ ...month.fixedItems[0], status: "skipped" }] };
+    const p = monthTemplateSync(m, [tpl], profile, "2026-10");
+    expect(p.fixedChecked).toBe(true);
+    expect(p.fixedItems[0].status).toBe("pending");
+    // Ya revisado: un omitido a mano se respeta.
+    expect(monthTemplateSync({ ...m, fixedChecked: true }, [tpl], profile, "2026-10")).toBeNull();
   });
 });

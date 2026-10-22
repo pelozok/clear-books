@@ -125,3 +125,26 @@ export const autoSavingsSync = (month, profile) => {
   }
   return changed ? { ...month.savings, perPerson } : null;
 };
+
+// Pone el mes abierto (el actual o uno siguiente) al día con el perfil y la plantilla.
+// Devuelve el patch o null si ya está:
+//   - frecuencia distinta a la del perfil: se aplica la del perfil (mensual = sin quincenas)
+//   - fijos activos de la plantilla que no están en el mes: entran pendientes
+//   - una vez por mes: fijos que el arranque en 2da quincena dejó "omitidos" vuelven a pendiente
+export const monthTemplateSync = (month, recurring, profile, currentKey) => {
+  if (!month || month.status === "closed" || !recurring || month.id < currentKey) return null;
+  const patch = {};
+  const freq = profile?.frequency;
+  if (freq && month.frequency !== freq) Object.assign(patch, profileToMonthPatch(month, profile.people || [], freq));
+  let items = (month.fixedItems || []).slice();
+  if (!month.fixedChecked) {
+    items = items.map((it) => (it.status === "skipped" && it.templateId && !it.fromMonth ? { ...it, status: "pending" } : it));
+    patch.fixedChecked = true;
+  }
+  for (const r of recurring) {
+    if (r.active === false || items.some((it) => it.templateId === r.id && !it.fromMonth)) continue;
+    items = applyTemplateToFixed(items, r, month.id);
+  }
+  if (JSON.stringify(items) !== JSON.stringify(month.fixedItems || [])) patch.fixedItems = items;
+  return Object.keys(patch).length ? patch : null;
+};

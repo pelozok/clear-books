@@ -8,10 +8,15 @@ import { errorText } from './shared.js'
 import FixedSheet from './FixedSheet.jsx'
 
 const PILL = { paid: 'done', pending: 'pending', skipped: 'skipped', deferred: 'deferred' }
-const PILL_LABEL = { paid: 'Pagado' }
+const PILL_LABEL = { paid: 'Pagado', pending: 'Por pagar', skipped: 'Omitido' }
+
+// Primero lo que falta pagar; después pagados, omitidos y diferidos (orden estable).
+const ORDER = { pending: 0, paid: 1, skipped: 2, deferred: 3 }
+const byStatus = (items) => items.slice().sort((a, b) => (ORDER[a.status] ?? 0) - (ORDER[b.status] ?? 0))
 
 // Grupos por quincena (quincenal) o uno solo (mensual). La quincena en curso va primero.
-const groupsOf = (items, frequency, currentHalf) => {
+const groupsOf = (allItems, frequency, currentHalf) => {
+  const items = byStatus(allItems)
   if (frequency !== 'quincenal') return [{ key: 'all', label: null, items }]
   const halves = halvesFor(frequency).sort((a, b) => (a === currentHalf ? -1 : b === currentHalf ? 1 : a - b))
   const groups = halves.map((h) => ({ key: h, label: halfLabel(h), items: items.filter((it) => (it.half === 2 ? 2 : it.half === 'ambas' ? null : 1) === h) }))
@@ -52,6 +57,7 @@ export default function FixedSection({ hid, me, month, totals, entriesCount, cur
   }
   const groups = groupsOf(items, month.frequency, currentHalf)
   const card = detectCardDoubleCount(items, entriesCount)
+  const pendingCount = items.filter((it) => (it.status || 'pending') === 'pending').length
 
   const mark = async (patch) => {
     setBusy(patch.status)
@@ -68,7 +74,11 @@ export default function FixedSection({ hid, me, month, totals, entriesCount, cur
   return (
     <Card
       title="Fijos"
-      subtitle={<span className="tnum">Pagado {fmt(totals.fixedPaid)} · Falta {fmt(totals.fixedPending)}</span>}
+      subtitle={
+        <span className="tnum">
+          {pendingCount > 0 ? `Falta por pagar ${fmt(totals.fixedPending)} (${pendingCount})` : 'Todo pagado'} · Pagado {fmt(totals.fixedPaid)}
+        </span>
+      }
       padded={false}
     >
       {groups.map((g) => (

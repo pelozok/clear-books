@@ -56,7 +56,7 @@ export default function FixedSheet({ open, item, onClose, onMark, busy }) {
         )}
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
           <Button variant="secondary" loading={busy === 'skipped'} disabled={!!busy || status === 'skipped'} onClick={() => onMark({ status: 'skipped' })}>
-            Este mes no
+            Omitir este mes
           </Button>
           <Button variant="secondary" loading={busy === 'deferred'} disabled={!!busy || status === 'deferred'} onClick={() => onMark({ status: 'deferred' })}>
             Pasa al mes siguiente
