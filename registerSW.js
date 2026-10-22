@@ -1,1 +1,0 @@
-if('serviceWorker' in navigator) {window.addEventListener('load', () => {navigator.serviceWorker.register('/clear-books/sw.js', { scope: '/clear-books/' })})}
