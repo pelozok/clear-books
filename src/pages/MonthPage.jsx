@@ -5,7 +5,6 @@ import MonthSkeleton from '../components/layout/MonthSkeleton.jsx'
 import MonthHeader from '../components/month/MonthHeader.jsx'
 import TeQuedaCard from '../components/month/TeQuedaCard.jsx'
 import MonthSummaryCard from '../components/month/MonthSummaryCard.jsx'
-import BudgetCard from '../components/month/BudgetCard.jsx'
 import CategoryCard from '../components/month/CategoryCard.jsx'
 import SavingsSection from '../components/month/SavingsSection.jsx'
 import FixedSection from '../components/month/FixedSection.jsx'
@@ -82,17 +81,16 @@ export default function MonthPage() {
   return (
     <>
       <MonthHeader monthKey={key} hid={hid} me={me} month={month} readOnly={closed} />
-      {/* Móvil: una columna. Escritorio: arriba las tres cifras (te queda, límite, resumen);
+      {/* Móvil: una columna. Escritorio: arriba las dos cifras (caja chica, resumen);
           abajo, a la izquierda lo que se marca (fijos, ahorro) y a la derecha lo que se anota. */}
       <div className="flex flex-col gap-6 pb-16">
         {prevOpen && <CloseBanner prevKey={prevKey} />}
-        <div className={`flex flex-col gap-6 lg:grid ${!closed && d.budget?.custom ? 'lg:grid-cols-3' : 'lg:grid-cols-2'} lg:items-stretch [&>*]:lg:h-full`}>
+        <div className={`flex flex-col gap-6 lg:grid lg:grid-cols-2 lg:items-stretch [&>*]:lg:h-full`}>
           {closed ? (
             <ClosedSummary month={month} profile={profile} savings={d.savings} />
           ) : (
             <TeQuedaCard plan={d.plan} profile={profile} month={month} today={today} budget={d.budget} />
           )}
-          {!closed && <BudgetCard budget={d.budget} />}
           <MonthSummaryCard month={month} totals={d.totals} />
         </div>
         <div className="flex flex-col gap-6 lg:grid lg:grid-cols-2 lg:items-start">

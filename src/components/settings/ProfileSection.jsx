@@ -119,8 +119,8 @@ export default function ProfileSection({ hid, me, profile }) {
             </Field>
             {d.mode !== 'pareja' && (
               <Field
-                label="Límite de gasto del día a día por mes (opcional)"
-                hint={p.spendLimit > 0 ? 'Te aviso cuando llegués al 80%.' : 'Vacío: el límite es lo que deja tu plan (ingreso − fijos − ahorro). Te aviso al llegar al 80%.'}
+                label="Caja chica: límite de gasto del día a día por mes (opcional)"
+                hint={p.spendLimit > 0 ? 'Te aviso cuando llegués al 80%.' : 'Vacío: se usa el 35% de tu ingreso del mes. Te aviso al llegar al 80%.'}
               >
                 <AmountInput
                   value={p.spendLimit || null}

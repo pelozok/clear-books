@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom'
 import { BigNumber, Card, ProgressBar } from '../ui/index.js'
 import { fmt, fmtAmount, fmtDateLong, fmtRelative } from '../../lib/format.js'
 import { transferToColones } from '../../lib/transfer.js'
@@ -18,11 +19,14 @@ const splitResultOf = (plan) => {
   }
 }
 
-// Cuánto mover de dólares a colones al cobrar. Lo que queda en dólares es ahorro.
-function TransferNote({ month, personId }) {
-  const rows = transferToColones(month, personId)
+// Cuánto mover de dólares a colones al cobrar: fijos en ₡ + caja chica. El resto se
+// queda en dólares como ahorro.
+function TransferNote({ month, personId, cajaChica }) {
+  const rows = transferToColones(month, personId, cajaChica)
   if (!rows.length) return null
   const quincenal = rows.length > 1
+  const salaryUSD = Number(month?.incomes?.[personId]?.salaryUSD) || 0
+  const keepUSD = Math.max(0, salaryUSD - rows.reduce((s, r) => s + r.usd, 0))
   return (
     <div className="mt-4 border-t border-line pt-3 text-small text-ink-2">
       <p className="text-body text-ink">Pasá a colones</p>
@@ -30,9 +34,12 @@ function TransferNote({ month, personId }) {
         <p key={r.half} className="tnum mt-1">
           {quincenal ? `${halfLabel(r.half)}: ` : ''}
           <span className="font-medium text-ink">{fmtAmount(r.usd, 'USD')}</span> ≈ {fmt(r.crc)}
+          {r.fixedCRC > 0 ? ` (${fmt(r.cajaCRC)} caja chica + ${fmt(r.fixedCRC)} fijos en ₡)` : ''}
         </p>
       ))}
-      <p className="mt-1">Es tu gasto del mes (fijos en ₡ y día a día). El resto se queda en dólares como ahorro.</p>
+      <p className="tnum mt-1">
+        El resto, <span className="font-medium text-ink">{fmtAmount(Math.round(keepUSD * 100) / 100, 'USD')}</span>, se queda en dólares como ahorro.
+      </p>
     </div>
   )
 }
@@ -52,19 +59,28 @@ function PersonFigure({ row, label, porQuincena, meta, quincenal, children }) {
   )
 }
 
-/** La cifra protagonista: "Te queda ₡X este mes", por persona. Sin animación. */
-// Barra de lo gastado contra lo que deja el plan (cuando no hay límite propio, la
-// tarjeta del límite repetiría esta cifra).
-function SpentBar({ budget }) {
-  if (!budget || budget.custom || budget.limit <= 0) return null
-  const tone = { ok: 'accent', near: 'warn', over: 'bad' }[budget.level]
+const TONE = { ok: 'accent', near: 'warn', over: 'bad' }
+
+/** Individual: la caja chica en colones (el límite de gasto del mes) y lo que queda de ella. */
+function CajaChica({ budget, month, personId, meta }) {
+  const over = budget.remaining < 0
   return (
-    <div className="mt-4">
-      <ProgressBar value={budget.spent} max={budget.limit} tone={tone} label="Gastado del mes" />
-      <p className={`tnum mt-2 text-small ${budget.level === 'ok' ? 'text-ink-2' : budget.level === 'near' ? 'text-warn' : 'text-bad'}`}>
-        Gastaste {fmt(budget.spent)} de {fmt(budget.limit)}{budget.level === 'near' ? ' · ojo, ya vas por el 80%' : ''}
-      </p>
-    </div>
+    <Card>
+      <h2 className="text-body text-ink-2">{over ? 'Te pasaste de la caja chica' : 'Caja chica: te queda para gastar'}</h2>
+      <BigNumber amount={Math.abs(budget.remaining)} tone={over ? 'bad' : 'ink'} className="mt-1 leading-[1.05]" />
+      <div className="mt-4">
+        <ProgressBar value={budget.spent} max={budget.limit} tone={TONE[budget.level]} label="Gastado de la caja chica" />
+        <p className={`tnum mt-2 text-small ${budget.level === 'ok' ? 'text-ink-2' : budget.level === 'near' ? 'text-warn' : 'text-bad'}`}>
+          Gastaste {fmt(budget.spent)} de {fmt(budget.limit)}{budget.level === 'near' ? ' · ojo, ya vas por el 80%' : ''}
+        </p>
+        <p className="mt-1 text-small text-ink-2">
+          {budget.custom ? 'Tu límite del mes' : 'Sugerido: 35% de tu ingreso'} ·{' '}
+          <Link to="/ajustes" className="text-accent underline underline-offset-[3px]">cambiar</Link>
+          {meta ? ` · ${meta}` : ''}
+        </p>
+      </div>
+      {month?.status !== 'closed' && <TransferNote month={month} personId={personId} cajaChica={budget.limit} />}
+    </Card>
   )
 }
 
@@ -77,12 +93,8 @@ export default function TeQuedaCard({ plan, profile, month, today, budget }) {
 
   if (!pareja) {
     const row = plan.perPerson[0] || { libre: 0, porQuincena: 0 }
-    return (
-      <PersonFigure row={row} porQuincena={row.porQuincena} meta={meta} quincenal={month?.frequency === 'quincenal'} label={{ queda: 'Te queda', falta: 'Te falta' }}>
-        <SpentBar budget={budget} />
-        {month?.status !== 'closed' && <TransferNote month={month} personId={row.personId} />}
-      </PersonFigure>
-    )
+    if (budget) return <CajaChica budget={budget} month={month} personId={row.personId} meta={meta} />
+    return <PersonFigure row={row} porQuincena={row.porQuincena} meta={meta} quincenal={month?.frequency === 'quincenal'} label={{ queda: 'Te queda', falta: 'Te falta' }} />
   }
 
   const people = plan.perPerson.map((r) => {
