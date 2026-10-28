@@ -10,7 +10,8 @@ export default defineConfig(({ command }) => ({
   plugins: [
     react(),
     VitePWA({
-      registerType: 'autoUpdate',
+      // 'prompt': la versión nueva espera hasta que la persona toque "Actualizar" (UpdatePrompt)
+      registerType: 'prompt',
       includeAssets: ['icon.svg', 'favicon.svg', 'apple-touch-icon.png'],
       manifest: {
         name: 'Clear Books',

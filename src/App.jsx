@@ -5,6 +5,7 @@ import { HouseholdProvider, useHousehold } from './data/HouseholdContext.jsx'
 import { Button, EmptyState, ToastProvider } from './components/ui/index.js'
 import AppShell from './components/layout/AppShell.jsx'
 import MonthSkeleton from './components/layout/MonthSkeleton.jsx'
+import UpdatePrompt from './components/layout/UpdatePrompt.jsx'
 import { monthKey, todayISO } from './lib/periods.js'
 import MonthPage from './pages/MonthPage.jsx'
 import NewEntryPage from './pages/NewEntryPage.jsx'
@@ -78,6 +79,7 @@ export default function App() {
     <AuthGate>
       <HouseholdProvider>
         <ToastProvider>
+          <UpdatePrompt />
           <HashRouter>
             <AppRoutes />
           </HashRouter>
