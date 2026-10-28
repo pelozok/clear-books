@@ -28,7 +28,7 @@ export default function ToolsPage() {
           <li key={t.id}>
             <Link
               to={`/herramientas/${t.id}`}
-              className="group flex h-full flex-col rounded-2xl bg-surface p-5 shadow-card transition-colors hover:bg-surface-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent"
+              className="group flex h-full flex-col rounded-2xl bg-surface p-5 shadow-card transition-colors hover:bg-surface-2 focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-accent"
             >
               <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-accent-soft text-accent-ink">
                 <t.icon size={20} strokeWidth={1.75} aria-hidden="true" />

@@ -85,7 +85,7 @@ export default function MonthPage() {
           abajo, a la izquierda lo que se marca (fijos, ahorro) y a la derecha lo que se anota. */}
       <div className="flex flex-col gap-6 pb-16">
         {prevOpen && <CloseBanner prevKey={prevKey} />}
-        <div className={`flex flex-col gap-6 lg:grid lg:grid-cols-2 lg:items-stretch [&>*]:lg:h-full`}>
+        <div className={`flex flex-col gap-6 lg:grid lg:grid-cols-2 lg:items-stretch lg:*:h-full`}>
           {closed ? (
             <ClosedSummary month={month} profile={profile} savings={d.savings} />
           ) : (

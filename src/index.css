@@ -2,9 +2,186 @@
    Vite inlinea el @import antes de Tailwind, así que su @layer funciona. */
 @import './styles/components.css';
 
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import 'tailwindcss';
+
+@theme inline {
+  --transition-property-*: initial;
+  --transition-property-none: none;
+  --transition-property: transform, opacity;
+  --transition-property-transform: transform;
+  --transition-property-opacity: opacity;
+  --transition-property-filter: filter;
+
+  --breakpoint-*: initial;
+  --breakpoint-xs: 360px;
+  --breakpoint-sm: 640px;
+  --breakpoint-md: 768px;
+  --breakpoint-lg: 1024px;
+  --breakpoint-xl: 1280px;
+
+  --color-*: initial;
+  --color-transparent: transparent;
+  --color-current: currentColor;
+  --color-white: #ffffff;
+  --color-black: #000000;
+  --color-bg: rgb(var(--c-bg));
+
+  --color-surface-2: rgb(var(--c-surface-2));
+  --color-surface: rgb(var(--c-surface));
+
+  --color-line: rgb(var(--c-line));
+
+  --color-ink-2: rgb(var(--c-ink-2));
+  --color-ink: rgb(var(--c-ink));
+
+  --color-muted: rgb(var(--c-muted));
+
+  --color-accent: rgb(var(--c-accent));
+  --color-accent-ink: rgb(var(--c-accent-ink));
+  --color-accent-soft: rgb(var(--c-accent-soft));
+
+  --color-on-accent: rgb(var(--c-on-accent));
+
+  --color-good: rgb(var(--c-good));
+  --color-good-soft: rgb(var(--c-good-soft));
+
+  --color-warn: rgb(var(--c-warn));
+  --color-warn-soft: rgb(var(--c-warn-soft));
+
+  --color-bad: rgb(var(--c-bad));
+  --color-bad-soft: rgb(var(--c-bad-soft));
+
+  --font-*: initial;
+  --font-sans:
+    'Geist Variable', system-ui, -apple-system, 'Segoe UI', sans-serif;
+
+  --text-*: initial;
+  --text-micro: 0.75rem;
+  --text-micro--line-height: 1.3;
+  --text-micro--font-weight: 500;
+  --text-small: 0.8125rem;
+  --text-small--line-height: 1.45;
+  --text-body: 0.9375rem;
+  --text-body--line-height: 1.5;
+  --text-heading: 1.0625rem;
+  --text-heading--line-height: 1.3;
+  --text-heading--font-weight: 600;
+  --text-title: 1.375rem;
+  --text-title--line-height: 1.2;
+  --text-title--letter-spacing: -0.01em;
+  --text-title--font-weight: 600;
+  --text-display: 3rem;
+  --text-display--line-height: 1.05;
+  --text-display--letter-spacing: -0.02em;
+  --text-display--font-weight: 600;
+  --text-xs: 0.75rem;
+  --text-xs--line-height: 1.3;
+  --text-sm: 0.8125rem;
+  --text-sm--line-height: 1.45;
+  --text-base: 0.9375rem;
+  --text-base--line-height: 1.5;
+  --text-lg: 1.0625rem;
+  --text-lg--line-height: 1.3;
+  --text-xl: 1.375rem;
+  --text-xl--line-height: 1.2;
+
+  --radius-xl: 12px;
+  --radius-2xl: 16px;
+
+  --shadow-card: var(--shadow-card);
+  --shadow-sheet: var(--shadow-sheet);
+
+  --default-transition-timing-function: var(--ease-out);
+  --ease-out: var(--ease-out);
+  --ease-in-out: var(--ease-in-out);
+  --ease-drawer: var(--ease-drawer);
+
+  --default-transition-duration: var(--dur-hover);
+  --transition-duration-press: var(--dur-press);
+  --transition-duration-hover: var(--dur-hover);
+  --transition-duration-toast: var(--dur-toast);
+  --transition-duration-dropdown: var(--dur-dropdown);
+  --transition-duration-sheet-in: var(--dur-sheet-in);
+  --transition-duration-sheet-out: var(--dur-sheet-out);
+
+  --spacing-side: var(--side-w);
+  --spacing-nav: var(--nav-h);
+  --spacing-safe-b: env(safe-area-inset-bottom);
+  --spacing-safe-t: env(safe-area-inset-top);
+  --spacing-gutter: var(--gutter);
+
+  --min-height-row: 56px;
+  --min-height-control: 44px;
+
+  --height-control: 44px;
+}
+
+/*
+  The default border color has changed to `currentcolor` in Tailwind CSS v4,
+  so we've added these compatibility styles to make sure everything still
+  looks the same as it did with Tailwind CSS v3.
+
+  If we ever want to remove these styles, we need to add an explicit border
+  color utility to any element that depends on these defaults.
+*/
+@layer base {
+  *,
+  ::after,
+  ::before,
+  ::backdrop,
+  ::file-selector-button {
+    border-color: currentcolor;
+  }
+}
+
+/* ------------------------------------------------------------------
+   Utilidades
+   ------------------------------------------------------------------ */
+
+@utility tnum {
+  font-variant-numeric: tabular-nums;
+}
+
+@utility text-display {
+  @media (max-width: 359.98px) {
+    font-size: 2.5rem;
+  }
+}
+
+@utility pressable {
+  /* Cifra protagonista: 48px, 40px en pantallas muy angostas */
+
+  /* Todo lo presionable: press 120ms con scale(0.97). Ver .cb-press abajo. */
+  transition-property: transform, opacity;
+  transition-duration: var(--dur-press);
+  transition-timing-function: var(--ease-out);
+  &:active:not(:disabled):not([aria-disabled='true']) {
+    transform: scale(0.97);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    &:active:not(:disabled) {
+      transform: none;
+    }
+  }
+}
+
+@utility safe-pb {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+@utility enter-from {
+  /* Entrada estándar: scale(0.96) + opacity 0 → 1 */
+  opacity: 0;
+  transform: scale(0.96);
+}
+
+@utility enter-to {
+  opacity: 1;
+  transform: none;
+  transition:
+    opacity var(--dur-dropdown) var(--ease-out),
+    transform var(--dur-dropdown) var(--ease-out);
+}
 
 /* ------------------------------------------------------------------
    Tokens (docs/DESIGN-TOKENS.md). Canales RGB sin "rgb()" para que
@@ -196,38 +373,5 @@
     *, *::before, *::after {
       animation: none !important;
     }
-  }
-}
-
-/* ------------------------------------------------------------------
-   Utilidades
-   ------------------------------------------------------------------ */
-@layer utilities {
-  .tnum { font-variant-numeric: tabular-nums; }
-
-  /* Cifra protagonista: 48px, 40px en pantallas muy angostas */
-  @media (max-width: 359.98px) {
-    .text-display { font-size: 2.5rem; }
-  }
-
-  /* Todo lo presionable: press 120ms con scale(0.97). Ver .cb-press abajo. */
-  .pressable {
-    transition-property: transform, opacity;
-    transition-duration: var(--dur-press);
-    transition-timing-function: var(--ease-out);
-  }
-  .pressable:active:not(:disabled):not([aria-disabled="true"]) { transform: scale(0.97); }
-  @media (prefers-reduced-motion: reduce) {
-    .pressable:active:not(:disabled) { transform: none; }
-  }
-
-  .safe-pb { padding-bottom: env(safe-area-inset-bottom); }
-
-  /* Entrada estándar: scale(0.96) + opacity 0 → 1 */
-  .enter-from { opacity: 0; transform: scale(0.96); }
-  .enter-to {
-    opacity: 1;
-    transform: none;
-    transition: opacity var(--dur-dropdown) var(--ease-out), transform var(--dur-dropdown) var(--ease-out);
   }
 }

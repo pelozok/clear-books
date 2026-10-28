@@ -12,7 +12,7 @@ export default function ProgressBar({ value = 0, max = 100, tone = 'accent', lab
       aria-valuemin={0}
       aria-valuemax={max}
       aria-valuenow={value}
-      className={cx('h-1.5 w-full overflow-hidden rounded-full bg-ink/[0.08]', className)}
+      className={cx('h-1.5 w-full overflow-hidden rounded-full bg-ink/8', className)}
     >
       <div
         className={cx('cb-progress-fill h-full w-full rounded-full', TONES[tone] || TONES.accent)}

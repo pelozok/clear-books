@@ -40,7 +40,7 @@ export default function Segmented({ options, value, onChange, size = 'md', class
       aria-disabled={disabled || undefined}
       onKeyDown={onKeyDown}
       className={cx(
-        'relative grid rounded-xl bg-ink/[0.06] p-[3px]',
+        'relative grid rounded-xl bg-ink/6 p-[3px]',
         s.track,
         disabled && 'cb-disabled',
         className,
@@ -72,7 +72,7 @@ export default function Segmented({ options, value, onChange, size = 'md', class
             disabled={disabled || opt.disabled}
             onClick={() => !checked && onChange?.(opt.value)}
             className={cx(
-              'cb-press relative z-[1] flex min-w-0 items-center justify-center truncate rounded-[9px] [--press-scale:0.96]',
+              'cb-press relative z-1 flex min-w-0 items-center justify-center truncate rounded-[9px] [--press-scale:0.96]',
               s.btn,
               checked ? 'text-ink' : 'text-ink-2',
             )}

@@ -104,7 +104,7 @@ const AmountInput = forwardRef(function AmountInput(
           value={text}
           onChange={handleChange}
           aria-label={props['aria-label'] || `Monto en ${currency === 'USD' ? 'dólares' : 'colones'}`}
-          className="tnum min-w-0 flex-1 bg-transparent text-title text-ink outline-none placeholder:text-muted focus-visible:outline-none"
+          className="tnum min-w-0 flex-1 bg-transparent text-title text-ink outline-hidden placeholder:text-muted focus-visible:outline-hidden"
           {...props}
         />
       </div>
